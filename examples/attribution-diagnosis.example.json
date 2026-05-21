@@ -1,0 +1,37 @@
+{
+  "entity": "OPPORTUNITY",
+  "id": "123",
+  "firstTouchObserved": {
+    "type": "tracking",
+    "createdAt": "2026-05-19T14:16:18.000Z",
+    "utmSource": "chatgpt.com",
+    "utmMedium": null,
+    "utmCampaign": null,
+    "gclid": null,
+    "fbclid": null,
+    "host": "example.com",
+    "vendorLeadOrigin": null,
+    "normalizedChannel": "ai_referral",
+    "normalizedSource": "AI / LLM Referral",
+    "confidence": "high"
+  },
+  "lastTouchObserved": {
+    "type": "conversion",
+    "createdAt": "2026-05-19T14:16:58.000Z",
+    "utmSource": "chatgpt.com",
+    "utmMedium": null,
+    "utmCampaign": null,
+    "gclid": null,
+    "fbclid": null,
+    "host": "example.com",
+    "vendorLeadOrigin": "organic | Twitter",
+    "normalizedChannel": "ai_referral",
+    "normalizedSource": "AI / LLM Referral",
+    "confidence": "high"
+  },
+  "warnings": [
+    "A origem classificada pela Leads2b diverge da UTM bruta observada.",
+    "O relatório deve tratar 'organic | Twitter' como classificação do fornecedor, não como fonte comprovada."
+  ],
+  "recommendation": "Usar utm_source=chatgpt.com como evidência principal e classificar localmente como AI / LLM Referral."
+}

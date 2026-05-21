@@ -1,0 +1,56 @@
+{
+  "name": "leads2b-mcp",
+  "version": "0.1.0",
+  "description": "Unofficial community MCP server for read-only Leads2b diagnostics.",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/neylwalecki/leads2b-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/neylwalecki/leads2b-mcp/issues"
+  },
+  "homepage": "https://github.com/neylwalecki/leads2b-mcp#readme",
+  "bin": {
+    "leads2b-mcp": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "docs",
+    "examples",
+    ".env.example",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:integration": "vitest run tests/integration.test.ts",
+    "test:mcp": "vitest run tests/mcp-stdio.test.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepack": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "leads2b",
+    "crm",
+    "attribution"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "dotenv": "^17.2.3",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "tsx": "^4.22.3",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.7"
+  },
+  "engines": {
+    "node": ">=20.10"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "data": [
+    {
+      "id": 9001,
+      "created_at": "2026-05-19T14:16:18.000Z",
+      "utm_source": "chatgpt.com",
+      "utm_medium": null,
+      "utm_campaign": null,
+      "utm_term": null,
+      "utm_content": null,
+      "g_clid": null,
+      "fb_clid": null,
+      "lead_origin": null,
+      "host": "example.com",
+      "title": "Example landing page"
+    }
+  ]
+}

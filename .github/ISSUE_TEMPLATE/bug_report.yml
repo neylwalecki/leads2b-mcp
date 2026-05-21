@@ -1,0 +1,58 @@
+name: Bug report
+description: Report a problem with the Leads2b MCP server.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a problem.
+
+        Before submitting, remove real Leads2b tokens, lead names, e-mails, phone numbers, customer names, screenshots, and raw API dumps. Use `example.com`, `lead@example.com`, fictitious phone numbers, and `<TOKEN>` placeholders.
+
+  - type: checkboxes
+    id: sanitization
+    attributes:
+      label: Data sanitization
+      options:
+        - label: I removed real tokens and authorization headers.
+          required: true
+        - label: I removed or replaced personal/customer data from examples and logs.
+          required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe the problem and the behavior you expected.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Include the MCP tool name, sanitized input, and sanitized output or error.
+      placeholder: |
+        1. Configure the server with v1/v2 tokens.
+        2. Call `leads2b_health_check`.
+        3. Observe...
+    validations:
+      required: true
+
+  - type: input
+    id: node_version
+    attributes:
+      label: Node.js version
+      placeholder: "20.10.0"
+
+  - type: input
+    id: package_version
+    attributes:
+      label: leads2b-mcp version or commit
+      placeholder: "0.1.0 or commit hash"
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Additional sanitized context

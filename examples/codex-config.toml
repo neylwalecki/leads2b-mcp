@@ -1,0 +1,8 @@
+[mcp_servers.leads2b]
+command = "node"
+args = ["/absolute/path/to/leads2b-mcp/dist/index.js"]
+cwd = "/absolute/path/to/leads2b-mcp"
+
+[mcp_servers.leads2b.env]
+LEADS2B_API_V1_TOKEN = "<SEU_TOKEN_V1>"
+LEADS2B_API_V2_TOKEN = "<SEU_TOKEN_V2>"

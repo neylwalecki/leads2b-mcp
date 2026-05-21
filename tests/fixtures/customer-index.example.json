@@ -1,0 +1,36 @@
+{
+  "data": {
+    "customers": [
+      {
+        "id": "100",
+        "name": "Example Industries Ltda",
+        "company_name": "Example Industries",
+        "email": "lead@example.com",
+        "phone_com": "+55 41 99999-0000",
+        "cel_phone": "+55 41 98888-0000",
+        "cnpj": "00000000000100",
+        "id_origin": "10",
+        "id_user": "8",
+        "create_date": "2026-05-14 10:15:48",
+        "update_date": null,
+        "address": "Rua Exemplo",
+        "city": "Curitiba"
+      },
+      {
+        "id": "101",
+        "name": "Demo Plastics Ltda",
+        "company_name": "Demo Plastics",
+        "email": "contact@example.com",
+        "phone_com": "+55 11 97777-0000",
+        "cel_phone": null,
+        "cnpj": "00000000000200",
+        "id_origin": "12",
+        "id_user": "7",
+        "create_date": "2026-05-15 09:00:00",
+        "update_date": "2026-05-16 11:00:00",
+        "address": "Avenida Exemplo",
+        "city": "Sao Paulo"
+      }
+    ]
+  }
+}
