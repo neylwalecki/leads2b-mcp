@@ -5,6 +5,7 @@
 Status:
 
 - `Confirmado`: endpoint testado e respondeu com sucesso.
+- `Não confirmado`: endpoint visto no app, mas ainda não respondeu corretamente com token de API no MCP.
 - `A pesquisar`: endpoint desejado, mas ainda não encontrado.
 
 Suporte MCP:
@@ -34,11 +35,35 @@ https://app.leads2b.com/api/v1
 |---|---:|---|---|---|---|
 | `/user/logged/` | GET | Confirmado | Usuário logado/autenticado | Bom para validar token v1. | MVP |
 | `/pipeline/active` | GET | Confirmado | Pipelines ativos | Útil para listar funis disponíveis. | MVP |
+| `/pipeline/byEntity/LEAD` | GET | Confirmado | Pipelines de lead | Útil para escolher funil correto por tipo de entidade. | MVP |
+| `/pipeline/byEntity/OPPORTUNITY` | GET | Confirmado | Pipelines de oportunidade | Útil para escolher funil correto por tipo de entidade. | MVP |
+| `/dashboard/lead_count/` | GET | Confirmado | Contador de leads | Retorna objeto com `result`. | MVP |
+| `/dashboard/opportunity_count/` | GET | Confirmado | Contador de oportunidades | Retorna objeto com `result`. | MVP |
+| `/dashboard/won_opportunity_count/` | GET | Confirmado | Contador de oportunidades ganhas | Retorna objeto com `result`. | MVP |
+| `/dashboard/hot_opportunity_count/` | GET | Confirmado | Contador de oportunidades quentes | Retorna objeto com `result`. | MVP |
+| `/dashboard/after_sales_count/` | GET | Confirmado | Contador de pós-venda | Retorna objeto com `result`. | MVP |
+| `/dashboard/pending_action_count/` | GET | Não confirmado | Contador de ações pendentes | Falhou com HTTP 500 em teste com token de API. | Depois |
+| `/user/users_by_access_level` | GET | Confirmado | Usuários por nível de acesso | Útil para responsáveis, filtros e auditoria. | MVP |
 | `/origin/index/` | GET | Confirmado | Catálogo de origens de clientes | Essencial para diagnosticar origem cadastral. | MVP |
+| `/tag/index/` | GET | Confirmado | Tags cadastradas | Útil para filtros e classificação. | MVP |
+| `/loss/index/opportunity` | GET | Confirmado | Motivos de perda de oportunidades | Útil para relatórios e diagnóstico comercial. | MVP |
+| `/chrome_extension/users` | GET | Confirmado | Usuários disponíveis para extensão Chrome | Pode retornar lista vazia. | MVP |
+| `/action/list/` | GET | Confirmado | Ações/tipos de ação | Útil para calendário e diagnóstico de atividades. | MVP |
+| `/campaign/search` | GET | Confirmado | Busca de campanhas | Aceita chamada simplificada com `draw` e `search[value]`. | MVP |
+| `/flow/search` | GET | Confirmado | Busca de fluxos | Aceita chamada simplificada com `draw` e `search[value]`. | MVP |
+| `/deal/count_deals` | GET | Confirmado | Contagem de deals | Requer `pipelineId` e `status`. | MVP |
+| `/custom_column/entity_columns/{ENTITY}/` | GET | Confirmado | Colunas customizadas por entidade | Confirmado para `LEAD`, `CONTACT` e `OPPORTUNITY`. | MVP |
+| `/customer_type` | GET | Confirmado | Tipos de customer | Catálogo simples da conta. | MVP |
+| `/receita/index/{cnpj}` | GET | Confirmado | Consulta Receita/CNPJ | Usa CNPJ no path. Pode retornar dados cadastrais públicos e de contato. | MVP |
 | `/form/index` | GET | Confirmado | Formulários/configurações disponíveis | Pode retornar lista vazia quando não houver formulários configurados. | MVP |
 | `/lead/columns` | GET | Confirmado | Colunas/campos de lead | Útil para introspecção de schema. | MVP |
 | `/customer/index` | GET | Confirmado | Clientes existentes da conta | Retorna `data.customers[]` com `id` e campos cadastrais. Útil para descobrir IDs candidatos para conversões/tracking. | MVP |
 | `/lead/index/{id}/defaultLead` | GET | Confirmado | Detalhe de lead | Usa ID de lead/customer aceito pela API. | MVP |
+| `/custom_table/simple_tables` | GET | Não confirmado | Tabelas customizadas simples | Falhou com HTTP 500 em teste com token de API. | Depois |
+| `/schedule/index/` | GET | Não confirmado | Agenda/lista de atividades | Endpoint observado no app, mas falhou com HTTP 500 em teste com token de API. | Depois |
+| `/schedule/count/` | GET | Não confirmado | Contadores de atividades | Endpoint observado no app, mas falhou com HTTP 500 em teste com token de API. | Depois |
+| `/globalSearch/searchV2/` | GET | Não confirmado | Busca global | Endpoint observado no app, mas falhou com HTTP 500 em teste com token de API. | Depois |
+| `/pipeline/kanbanData/{id}` | GET | Não confirmado | Cards do kanban por pipeline | Endpoint observado no app, mas falhou com HTTP 500 em teste com token de API. | Depois |
 
 ## API v2
 
@@ -54,6 +79,14 @@ https://app.leads2b.com/api/v2
 | `/webhooks` | GET | Confirmado | Webhooks configurados | Pode retornar lista vazia quando não houver webhooks configurados. | MVP |
 | `/customer` | GET | Confirmado | Lista e busca server-side de customers | Aceita `search` para filtrar. | MVP |
 | `/customer/{id}` | GET | Confirmado | Detalhe de customer | Usa ID retornado em `/customer`. | MVP |
+| `/markets/cnaes/all` | GET | Confirmado | CNAEs/mercados | Útil para filtros e segmentação. | MVP |
+| `/mail/accounts` | GET | Confirmado | Contas de e-mail conectadas | Pode retornar lista vazia. | MVP |
+| `/mail/calendars/events` | GET | Confirmado | Eventos de calendário | Aceita arrays `users[]`, `calendars[]`, `types[]` e janela `start`/`end`. | MVP |
+| `/segmentations` | GET | Confirmado | Segmentações por entidade | Confirmado para `CUSTOMER`, `LEAD` e `OPPORTUNITY`. | MVP |
+| `/feedbacks/company` | GET | Confirmado | Feedbacks da empresa | Endpoint de conta/empresa, não de lead individual. | MVP |
+| `/companies/event` | GET | Confirmado | Eventos/recompensas da empresa | Endpoint de conta/empresa. | MVP |
+| `/users/filters?name=leadsColumns` | GET | Confirmado | Filtro salvo de colunas de leads | Respondeu com `data: null` no teste com token de API. | Depois |
+| `/deals/lead-inbox` | GET | Não confirmado | Inbox de leads/deals | Endpoint observado no app, mas falhou com HTTP 404 em teste com token de API. | Depois |
 | `/integrations/config/token` | GET | Confirmado | Token público do snippet | Não confundir com token privado de API. | MVP |
 | `/integrations/config/script` | GET | Confirmado | Script completo do snippet | Útil para validar instalação. | MVP |
 | `/markets/countries` | GET | Confirmado | Países/mercados | Baixa prioridade operacional. | Depois |

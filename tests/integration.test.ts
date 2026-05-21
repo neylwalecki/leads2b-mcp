@@ -35,6 +35,40 @@ describe.skipIf(!runIntegration)("Leads2b read-only integration", () => {
     await expect(v2.listUsers()).resolves.toEqual(expect.any(Object));
   });
 
+  it("validates observed read-only metadata and calendar endpoints", async () => {
+    expect(config.apiV1Token).toBeTruthy();
+    expect(config.apiV2Token).toBeTruthy();
+
+    await expect(v1.getDashboardCounts()).resolves.toEqual(expect.any(Object));
+    await expect(v1.listPipelinesByEntity({ entity: "LEAD" })).resolves.toEqual(expect.any(Object));
+    await expect(v1.listPipelinesByEntity({ entity: "OPPORTUNITY" })).resolves.toEqual(expect.any(Object));
+    await expect(v1.listUsersByAccessLevel()).resolves.toEqual(expect.any(Object));
+    await expect(v1.listTags()).resolves.toEqual(expect.any(Object));
+    await expect(v1.listLossReasons({ entity: "OPPORTUNITY" })).resolves.toEqual(expect.any(Object));
+    await expect(v1.listChromeExtensionUsers()).resolves.toEqual(expect.any(Object));
+    await expect(v1.listActions()).resolves.toEqual(expect.any(Object));
+    await expect(v1.searchCampaigns()).resolves.toEqual(expect.any(Object));
+    await expect(v1.searchFlows()).resolves.toEqual(expect.any(Object));
+    await expect(v1.countDeals({ pipelineId: 3, status: "lost" })).resolves.toEqual(expect.any(Object));
+    await expect(v1.getEntityColumns({ entity: "CONTACT" })).resolves.toEqual(expect.any(Object));
+    await expect(v1.listCustomerTypes()).resolves.toEqual(expect.any(Object));
+    await expect(v2.listCnaes()).resolves.toEqual(expect.any(Object));
+    await expect(v2.listMailAccounts()).resolves.toEqual(expect.any(Object));
+    await expect(v2.listCompanyFeedbacks()).resolves.toEqual(expect.any(Object));
+    await expect(v2.getCompanyEvents()).resolves.toEqual(expect.any(Object));
+    await expect(v2.listSegmentations({ entity: "OPPORTUNITY", limit: 20, offset: 0 })).resolves.toEqual(expect.any(Object));
+    await expect(
+      v2.listCalendarEvents({
+        calendars: ["leads2b"],
+        types: ["action", "meet"],
+        start: "2026-04-26T03:00:00.000Z",
+        end: "2026-06-07T03:00:00.000Z",
+        limit: 200,
+        offset: 0
+      })
+    ).resolves.toEqual(expect.any(Object));
+  }, 20_000);
+
   it("validates observed customer search, customer detail and lead detail endpoints", async () => {
     const customerResponse = await v1.listCustomers();
     const sample = extractCustomers(customerResponse).find(

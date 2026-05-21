@@ -13,6 +13,9 @@ type ReadDeps = {
 
 const EntitySchema = z.enum(["LEAD", "CONTACT", "OPPORTUNITY"]);
 const IdSchema = z.union([z.string().min(1), z.number()]);
+const PipelineEntitySchema = z.enum(["LEAD", "OPPORTUNITY"]);
+const LossEntitySchema = z.enum(["OPPORTUNITY"]);
+const SegmentationEntitySchema = z.enum(["CUSTOMER", "LEAD", "OPPORTUNITY"]);
 
 export function registerReadTools(server: McpServer, deps: ReadDeps): void {
   registerSimpleReadTool(server, {
@@ -40,6 +43,49 @@ export function registerReadTools(server: McpServer, deps: ReadDeps): void {
   });
 
   registerSimpleReadTool(server, {
+    name: "leads2b_get_dashboard_counts",
+    title: "Get dashboard counts",
+    description: "Consulta contadores do dashboard na API v1.",
+    source: { api: "v1", endpoint: "/dashboard/*_count/", stability: "observed" },
+    handler: () => deps.v1.getDashboardCounts()
+  });
+
+  server.registerTool(
+    "leads2b_list_pipelines_by_entity",
+    {
+      title: "List pipelines by entity",
+      description: "Lista pipelines da API v1 por entidade.",
+      inputSchema: {
+        entity: PipelineEntitySchema
+      },
+      annotations: {
+        readOnlyHint: true
+      }
+    },
+    async ({ entity }) => {
+      try {
+        const data = await deps.v1.listPipelinesByEntity({ entity });
+        return okResult({
+          ok: true,
+          data,
+          summary: `Pipelines consultados para ${entity}.`,
+          source: { api: "v1", endpoint: "/pipeline/byEntity/{entity}", stability: "observed" }
+        });
+      } catch (error) {
+        return errorResult(error);
+      }
+    }
+  );
+
+  registerSimpleReadTool(server, {
+    name: "leads2b_list_users_by_access_level",
+    title: "List users by access level",
+    description: "Lista usuários agrupados por nível de acesso pela API v1.",
+    source: { api: "v1", endpoint: "/user/users_by_access_level", stability: "observed" },
+    handler: () => deps.v1.listUsersByAccessLevel()
+  });
+
+  registerSimpleReadTool(server, {
     name: "leads2b_list_forms",
     title: "List forms",
     description: "Lista formulários conhecidos pela API v1.",
@@ -54,6 +100,206 @@ export function registerReadTools(server: McpServer, deps: ReadDeps): void {
     source: { api: "v1", endpoint: "/lead/columns", stability: "confirmed" },
     handler: () => deps.v1.getLeadColumns()
   });
+
+  registerSimpleReadTool(server, {
+    name: "leads2b_list_tags",
+    title: "List tags",
+    description: "Lista tags cadastradas na API v1.",
+    source: { api: "v1", endpoint: "/tag/index/", stability: "observed" },
+    handler: () => deps.v1.listTags()
+  });
+
+  registerSimpleReadTool(server, {
+    name: "leads2b_list_chrome_extension_users",
+    title: "List chrome extension users",
+    description: "Lista usuários disponíveis para a extensão Chrome pela API v1.",
+    source: { api: "v1", endpoint: "/chrome_extension/users", stability: "observed" },
+    handler: () => deps.v1.listChromeExtensionUsers()
+  });
+
+  registerSimpleReadTool(server, {
+    name: "leads2b_list_actions",
+    title: "List actions",
+    description: "Lista ações/tipos de ação disponíveis na API v1.",
+    source: { api: "v1", endpoint: "/action/list/", stability: "observed" },
+    handler: () => deps.v1.listActions()
+  });
+
+  server.registerTool(
+    "leads2b_search_campaigns",
+    {
+      title: "Search campaigns",
+      description: "Busca campanhas pela API v1 usando o endpoint DataTables simplificado.",
+      inputSchema: {
+        search: z.string().optional(),
+        draw: z.number().int().min(1).optional()
+      },
+      annotations: {
+        readOnlyHint: true
+      }
+    },
+    async ({ search, draw }) => {
+      try {
+        const data = await deps.v1.searchCampaigns({ search, draw });
+        return okResult({
+          ok: true,
+          data,
+          summary: "Campanhas consultadas.",
+          source: { api: "v1", endpoint: "/campaign/search", stability: "observed" }
+        });
+      } catch (error) {
+        return errorResult(error);
+      }
+    }
+  );
+
+  server.registerTool(
+    "leads2b_search_flows",
+    {
+      title: "Search flows",
+      description: "Busca fluxos pela API v1 usando o endpoint DataTables simplificado.",
+      inputSchema: {
+        search: z.string().optional(),
+        draw: z.number().int().min(1).optional()
+      },
+      annotations: {
+        readOnlyHint: true
+      }
+    },
+    async ({ search, draw }) => {
+      try {
+        const data = await deps.v1.searchFlows({ search, draw });
+        return okResult({
+          ok: true,
+          data,
+          summary: "Fluxos consultados.",
+          source: { api: "v1", endpoint: "/flow/search", stability: "observed" }
+        });
+      } catch (error) {
+        return errorResult(error);
+      }
+    }
+  );
+
+  server.registerTool(
+    "leads2b_count_deals",
+    {
+      title: "Count deals",
+      description: "Conta deals por pipeline e status pela API v1.",
+      inputSchema: {
+        pipelineId: IdSchema,
+        status: z.string().min(1),
+        search: z.string().optional()
+      },
+      annotations: {
+        readOnlyHint: true
+      }
+    },
+    async ({ pipelineId, status, search }) => {
+      try {
+        const data = await deps.v1.countDeals({ pipelineId, status, search });
+        return okResult({
+          ok: true,
+          data,
+          summary: `Deals contados para pipeline ${pipelineId} e status ${status}.`,
+          source: { api: "v1", endpoint: "/deal/count_deals", stability: "observed" }
+        });
+      } catch (error) {
+        return errorResult(error);
+      }
+    }
+  );
+
+  server.registerTool(
+    "leads2b_get_entity_columns",
+    {
+      title: "Get entity columns",
+      description: "Consulta colunas customizadas por entidade pela API v1.",
+      inputSchema: {
+        entity: EntitySchema,
+        withDeleted: z.boolean().optional(),
+        onlyCount: z.boolean().optional()
+      },
+      annotations: {
+        readOnlyHint: true
+      }
+    },
+    async ({ entity, withDeleted, onlyCount }) => {
+      try {
+        const data = await deps.v1.getEntityColumns({ entity, withDeleted, onlyCount });
+        return okResult({
+          ok: true,
+          data,
+          summary: `Colunas consultadas para ${entity}.`,
+          source: { api: "v1", endpoint: "/custom_column/entity_columns/{entity}/", stability: "observed" }
+        });
+      } catch (error) {
+        return errorResult(error);
+      }
+    }
+  );
+
+  registerSimpleReadTool(server, {
+    name: "leads2b_list_customer_types",
+    title: "List customer types",
+    description: "Lista tipos de customer pela API v1.",
+    source: { api: "v1", endpoint: "/customer_type", stability: "observed" },
+    handler: () => deps.v1.listCustomerTypes()
+  });
+
+  server.registerTool(
+    "leads2b_get_receita_by_cnpj",
+    {
+      title: "Get receita by CNPJ",
+      description: "Consulta dados de Receita/CNPJ pela API v1.",
+      inputSchema: {
+        cnpj: z.string().min(1)
+      },
+      annotations: {
+        readOnlyHint: true
+      }
+    },
+    async ({ cnpj }) => {
+      try {
+        const data = await deps.v1.getReceitaByCnpj({ cnpj });
+        return okResult({
+          ok: true,
+          data,
+          summary: "Receita/CNPJ consultado.",
+          source: { api: "v1", endpoint: "/receita/index/{cnpj}", stability: "observed" }
+        });
+      } catch (error) {
+        return errorResult(error);
+      }
+    }
+  );
+
+  server.registerTool(
+    "leads2b_list_loss_reasons",
+    {
+      title: "List loss reasons",
+      description: "Lista motivos de perda para oportunidades na API v1.",
+      inputSchema: {
+        entity: LossEntitySchema.optional()
+      },
+      annotations: {
+        readOnlyHint: true
+      }
+    },
+    async ({ entity = "OPPORTUNITY" }) => {
+      try {
+        const data = await deps.v1.listLossReasons({ entity });
+        return okResult({
+          ok: true,
+          data,
+          summary: `Motivos de perda consultados para ${entity}.`,
+          source: { api: "v1", endpoint: "/loss/index/{entity}", stability: "observed" }
+        });
+      } catch (error) {
+        return errorResult(error);
+      }
+    }
+  );
 
   server.registerTool(
     "leads2b_list_customers",
@@ -239,6 +485,108 @@ export function registerReadTools(server: McpServer, deps: ReadDeps): void {
     source: { api: "v2", endpoint: "/webhooks", stability: "confirmed" },
     handler: () => deps.v2.listWebhooks()
   });
+
+  registerSimpleReadTool(server, {
+    name: "leads2b_list_cnaes",
+    title: "List CNAEs",
+    description: "Lista CNAEs/mercados disponíveis na API v2.",
+    source: { api: "v2", endpoint: "/markets/cnaes/all", stability: "observed" },
+    handler: () => deps.v2.listCnaes()
+  });
+
+  registerSimpleReadTool(server, {
+    name: "leads2b_list_mail_accounts",
+    title: "List mail accounts",
+    description: "Lista contas de e-mail conectadas na API v2.",
+    source: { api: "v2", endpoint: "/mail/accounts", stability: "observed" },
+    handler: () => deps.v2.listMailAccounts()
+  });
+
+  registerSimpleReadTool(server, {
+    name: "leads2b_list_company_feedbacks",
+    title: "List company feedbacks",
+    description: "Lista feedbacks da empresa na API v2.",
+    source: { api: "v2", endpoint: "/feedbacks/company", stability: "observed" },
+    handler: () => deps.v2.listCompanyFeedbacks()
+  });
+
+  registerSimpleReadTool(server, {
+    name: "leads2b_get_company_events",
+    title: "Get company events",
+    description: "Consulta eventos/recompensas da empresa na API v2.",
+    source: { api: "v2", endpoint: "/companies/event", stability: "observed" },
+    handler: () => deps.v2.getCompanyEvents()
+  });
+
+  server.registerTool(
+    "leads2b_list_segmentations",
+    {
+      title: "List segmentations",
+      description: "Lista segmentações por entidade pela API v2.",
+      inputSchema: {
+        entity: SegmentationEntitySchema,
+        limit: z.number().int().min(1).max(500).optional(),
+        offset: z.number().int().min(0).optional()
+      },
+      annotations: {
+        readOnlyHint: true
+      }
+    },
+    async ({ entity, limit = 20, offset = 0 }) => {
+      try {
+        const data = await deps.v2.listSegmentations({ entity, limit, offset });
+        return okResult({
+          ok: true,
+          data,
+          summary: `Segmentações consultadas para ${entity}.`,
+          source: { api: "v2", endpoint: "/segmentations", stability: "observed" }
+        });
+      } catch (error) {
+        return errorResult(error);
+      }
+    }
+  );
+
+  server.registerTool(
+    "leads2b_list_calendar_events",
+    {
+      title: "List calendar events",
+      description: "Lista eventos de calendário da Leads2b pela API v2.",
+      inputSchema: {
+        start: z.string().min(1),
+        end: z.string().min(1),
+        userIds: z.array(IdSchema).optional(),
+        calendars: z.array(z.string().min(1)).optional(),
+        types: z.array(z.string().min(1)).optional(),
+        limit: z.number().int().min(1).max(500).optional(),
+        offset: z.number().int().min(0).optional()
+      },
+      annotations: {
+        readOnlyHint: true
+      }
+    },
+    async ({ start, end, userIds, calendars = ["leads2b"], types = ["action", "meet"], limit = 200, offset = 0 }) => {
+      try {
+        const data = await deps.v2.listCalendarEvents({
+          userIds,
+          calendars,
+          types,
+          start,
+          end,
+          limit,
+          offset
+        });
+        return okResult({
+          ok: true,
+          data,
+          summary: "Eventos de calendário consultados.",
+          source: { api: "v2", endpoint: "/mail/calendars/events", stability: "observed" }
+        });
+      } catch (error) {
+        return errorResult(error);
+      }
+    }
+  );
 
   registerSimpleReadTool(server, {
     name: "leads2b_get_snippet_config",

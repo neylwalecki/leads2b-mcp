@@ -7,7 +7,7 @@ export type Leads2bHttpClientOptions = {
 };
 
 export type Leads2bRequestOptions = {
-  query?: Record<string, string | number | boolean | undefined>;
+  query?: Record<string, string | number | boolean | Array<string | number | boolean> | undefined>;
   headers?: Record<string, string>;
 };
 
@@ -85,7 +85,11 @@ export class Leads2bHttpClient {
     const url = new URL(`${this.baseUrl}${normalizedPath}`);
 
     for (const [key, value] of Object.entries(query ?? {})) {
-      if (value !== undefined) {
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          url.searchParams.append(key, String(item));
+        }
+      } else if (value !== undefined) {
         url.searchParams.set(key, String(value));
       }
     }

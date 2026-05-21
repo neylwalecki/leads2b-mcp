@@ -118,8 +118,21 @@ Exemplos prontos:
 | `leads2b_get_logged_user` | v1 | Consultar usuário autenticado. |
 | `leads2b_list_origins` | v1 | Listar origens cadastrais. |
 | `leads2b_list_pipelines` | v1 | Listar pipelines ativos. |
+| `leads2b_list_pipelines_by_entity` | v1 | Listar pipelines por entidade. |
+| `leads2b_get_dashboard_counts` | v1 | Consultar contadores principais do dashboard. |
+| `leads2b_list_users_by_access_level` | v1 | Listar usuários por nível de acesso. |
 | `leads2b_list_forms` | v1 | Listar formulários. |
 | `leads2b_get_lead_columns` | v1 | Listar colunas/campos de lead. |
+| `leads2b_list_tags` | v1 | Listar tags cadastradas. |
+| `leads2b_list_loss_reasons` | v1 | Listar motivos de perda de oportunidades. |
+| `leads2b_list_chrome_extension_users` | v1 | Listar usuários disponíveis para a extensão Chrome. |
+| `leads2b_list_actions` | v1 | Listar ações/tipos de ação. |
+| `leads2b_search_campaigns` | v1 | Buscar campanhas. |
+| `leads2b_search_flows` | v1 | Buscar fluxos. |
+| `leads2b_count_deals` | v1 | Contar deals por pipeline e status. |
+| `leads2b_get_entity_columns` | v1 | Consultar colunas customizadas por entidade. |
+| `leads2b_list_customer_types` | v1 | Listar tipos de customer. |
+| `leads2b_get_receita_by_cnpj` | v1 | Consultar Receita/CNPJ. |
 | `leads2b_list_customers` | v1 | Listar clientes e obter IDs candidatos. |
 | `leads2b_find_customer` | v1/local | Buscar customer por e-mail, telefone, documento, nome ou texto. |
 | `leads2b_search_customers` | v2 | Buscar customers com filtro server-side. |
@@ -127,6 +140,12 @@ Exemplos prontos:
 | `leads2b_get_lead_detail` | v1 | Consultar detalhe de lead por ID. |
 | `leads2b_list_users` | v2 | Listar usuários. |
 | `leads2b_list_webhooks` | v2 | Listar webhooks. |
+| `leads2b_list_cnaes` | v2 | Listar CNAEs/mercados. |
+| `leads2b_list_mail_accounts` | v2 | Listar contas de e-mail conectadas. |
+| `leads2b_list_company_feedbacks` | v2 | Listar feedbacks da empresa. |
+| `leads2b_get_company_events` | v2 | Consultar eventos/recompensas da empresa. |
+| `leads2b_list_calendar_events` | v2 | Listar eventos de calendário. |
+| `leads2b_list_segmentations` | v2 | Listar segmentações por entidade. |
 | `leads2b_get_snippet_config` | v2 | Consultar configuração/token público do snippet. |
 | `leads2b_get_snippet_script` | v2 | Consultar script oficial do snippet. |
 | `leads2b_get_conversions` | v2 | Consultar conversões por `id` e `entity`. |
@@ -159,6 +178,92 @@ Exemplos prontos:
   limit?: number;
   offset?: number;
   summaryOnly?: boolean;
+}
+```
+
+`leads2b_list_pipelines_by_entity` aceita:
+
+```ts
+{
+  entity: "LEAD" | "OPPORTUNITY";
+}
+```
+
+`leads2b_list_loss_reasons` usa `OPPORTUNITY` por padrão:
+
+```ts
+{
+  entity?: "OPPORTUNITY";
+}
+```
+
+`leads2b_search_campaigns` aceita:
+
+```ts
+{
+  search?: string;
+  draw?: number;
+}
+```
+
+`leads2b_search_flows` usa o mesmo formato:
+
+```ts
+{
+  search?: string;
+  draw?: number;
+}
+```
+
+`leads2b_count_deals` exige `pipelineId` e `status`:
+
+```ts
+{
+  pipelineId: string | number;
+  status: string;
+  search?: string;
+}
+```
+
+`leads2b_get_entity_columns` aceita:
+
+```ts
+{
+  entity: "LEAD" | "CONTACT" | "OPPORTUNITY";
+  withDeleted?: boolean;
+  onlyCount?: boolean;
+}
+```
+
+`leads2b_get_receita_by_cnpj` aceita CNPJ com ou sem máscara:
+
+```ts
+{
+  cnpj: string;
+}
+```
+
+`leads2b_list_calendar_events` exige janela de datas para evitar consultas amplas demais:
+
+```ts
+{
+  start: string;
+  end: string;
+  userIds?: Array<string | number>;
+  calendars?: string[];
+  types?: string[];
+  limit?: number;
+  offset?: number;
+}
+```
+
+`leads2b_list_segmentations` aceita:
+
+```ts
+{
+  entity: "CUSTOMER" | "LEAD" | "OPPORTUNITY";
+  limit?: number;
+  offset?: number;
 }
 ```
 

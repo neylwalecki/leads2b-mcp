@@ -46,14 +46,33 @@ type ToolError = {
 | `leads2b_list_users` | v2 | `/users` | Listar usuários da conta. |
 | `leads2b_list_origins` | v1 | `/origin/index/` | Listar origens cadastrais. |
 | `leads2b_list_pipelines` | v1 | `/pipeline/active` | Listar funis/pipelines ativos. |
+| `leads2b_list_pipelines_by_entity` | v1 | `/pipeline/byEntity/{entity}` | Listar funis/pipelines por entidade. |
+| `leads2b_get_dashboard_counts` | v1 | `/dashboard/*_count/` | Consultar contadores principais do dashboard. |
+| `leads2b_list_users_by_access_level` | v1 | `/user/users_by_access_level` | Listar usuários por nível de acesso. |
 | `leads2b_list_forms` | v1 | `/form/index` | Listar formulários conhecidos pela API v1. |
 | `leads2b_get_lead_columns` | v1 | `/lead/columns` | Listar colunas/campos de lead. |
+| `leads2b_list_tags` | v1 | `/tag/index/` | Listar tags cadastradas. |
+| `leads2b_list_loss_reasons` | v1 | `/loss/index/opportunity` | Listar motivos de perda de oportunidades. |
+| `leads2b_list_chrome_extension_users` | v1 | `/chrome_extension/users` | Listar usuários disponíveis para extensão Chrome. |
+| `leads2b_list_actions` | v1 | `/action/list/` | Listar ações/tipos de ação. |
+| `leads2b_search_campaigns` | v1 | `/campaign/search` | Buscar campanhas. |
+| `leads2b_search_flows` | v1 | `/flow/search` | Buscar fluxos. |
+| `leads2b_count_deals` | v1 | `/deal/count_deals` | Contar deals por pipeline e status. |
+| `leads2b_get_entity_columns` | v1 | `/custom_column/entity_columns/{entity}/` | Consultar colunas customizadas por entidade. |
+| `leads2b_list_customer_types` | v1 | `/customer_type` | Listar tipos de customer. |
+| `leads2b_get_receita_by_cnpj` | v1 | `/receita/index/{cnpj}` | Consultar Receita/CNPJ. |
 | `leads2b_list_customers` | v1 | `/customer/index` | Listar clientes existentes e obter IDs candidatos. |
 | `leads2b_find_customer` | v1/local | `/customer/index` | Buscar customer por e-mail, telefone, documento, nome ou texto. |
 | `leads2b_search_customers` | v2 | `/customer?search={search}` | Buscar customers com filtro server-side. |
 | `leads2b_get_customer` | v2 | `/customer/{id}` | Consultar detalhe de customer por ID. |
 | `leads2b_get_lead_detail` | v1 | `/lead/index/{id}/defaultLead` | Consultar detalhe de lead por ID. |
 | `leads2b_list_webhooks` | v2 | `/webhooks` | Listar webhooks configurados. |
+| `leads2b_list_cnaes` | v2 | `/markets/cnaes/all` | Listar CNAEs/mercados. |
+| `leads2b_list_mail_accounts` | v2 | `/mail/accounts` | Listar contas de e-mail conectadas. |
+| `leads2b_list_company_feedbacks` | v2 | `/feedbacks/company` | Listar feedbacks da empresa. |
+| `leads2b_get_company_events` | v2 | `/companies/event` | Consultar eventos/recompensas da empresa. |
+| `leads2b_list_calendar_events` | v2 | `/mail/calendars/events` | Listar eventos de calendário. |
+| `leads2b_list_segmentations` | v2 | `/segmentations` | Listar segmentações por entidade. |
 | `leads2b_get_snippet_config` | v2 | `/integrations/config/token` | Obter token público do snippet. |
 | `leads2b_get_snippet_script` | v2 | `/integrations/config/script` | Obter script oficial do snippet. |
 | `leads2b_get_conversions` | v2 | `/conversions` | Consultar conversões por `id` e `entity`. |
@@ -83,6 +102,124 @@ Saída esperada:
 - Token v2 válido: sim/não.
 - Expiração do token v2, se detectável no JWT.
 - Ferramentas disponíveis.
+
+### Ferramentas de Catálogo e Operação
+
+As ferramentas abaixo retornam a resposta da API autenticada sem normalização pesada:
+
+- `leads2b_get_dashboard_counts`
+- `leads2b_list_users_by_access_level`
+- `leads2b_list_tags`
+- `leads2b_list_chrome_extension_users`
+- `leads2b_list_actions`
+- `leads2b_list_cnaes`
+- `leads2b_list_mail_accounts`
+- `leads2b_list_company_feedbacks`
+- `leads2b_get_company_events`
+
+### `leads2b_list_pipelines_by_entity`
+
+Entrada:
+
+```ts
+type Input = {
+  entity: "LEAD" | "OPPORTUNITY";
+};
+```
+
+### `leads2b_list_loss_reasons`
+
+Entrada:
+
+```ts
+type Input = {
+  entity?: "OPPORTUNITY";
+};
+```
+
+### `leads2b_search_campaigns`
+
+Entrada:
+
+```ts
+type Input = {
+  search?: string;
+  draw?: number;
+};
+```
+
+### `leads2b_search_flows`
+
+Entrada:
+
+```ts
+type Input = {
+  search?: string;
+  draw?: number;
+};
+```
+
+### `leads2b_count_deals`
+
+Entrada:
+
+```ts
+type Input = {
+  pipelineId: string | number;
+  status: string;
+  search?: string;
+};
+```
+
+### `leads2b_get_entity_columns`
+
+Entrada:
+
+```ts
+type Input = {
+  entity: "LEAD" | "CONTACT" | "OPPORTUNITY";
+  withDeleted?: boolean;
+  onlyCount?: boolean;
+};
+```
+
+### `leads2b_get_receita_by_cnpj`
+
+Entrada:
+
+```ts
+type Input = {
+  cnpj: string;
+};
+```
+
+### `leads2b_list_calendar_events`
+
+Entrada:
+
+```ts
+type Input = {
+  start: string;
+  end: string;
+  userIds?: Array<string | number>;
+  calendars?: string[];
+  types?: string[];
+  limit?: number;
+  offset?: number;
+};
+```
+
+### `leads2b_list_segmentations`
+
+Entrada:
+
+```ts
+type Input = {
+  entity: "CUSTOMER" | "LEAD" | "OPPORTUNITY";
+  limit?: number;
+  offset?: number;
+};
+```
 
 ### `leads2b_list_customers`
 

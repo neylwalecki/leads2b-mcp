@@ -9,6 +9,7 @@ Este projeto começa com um servidor MCP read-only para diagnóstico de dados da
 - Clientes HTTP separados para API v1 e API v2.
 - `health_check` com status de tokens, APIs e ferramentas disponíveis.
 - Ferramentas read-only para usuários, origens, pipelines, formulários, colunas, clientes, webhooks, snippet, conversões e tracking.
+- Ferramentas read-only para contadores de dashboard, pipelines por entidade, usuários por nível de acesso, tags, motivos de perda, ações, campanhas, fluxos, contagem de deals, tipos de customer, Receita/CNPJ, CNAEs, segmentações, contas de e-mail, feedbacks, eventos da empresa e calendário.
 - Busca local de customers via `customer/index`.
 - Busca server-side e detalhe de customers via API v2.
 - Detalhe de lead por ID via API v1.
@@ -20,6 +21,7 @@ Este projeto começa com um servidor MCP read-only para diagnóstico de dados da
 ## Próximos Passos
 
 - Descobrir endpoints confiáveis para oportunidade e contato por e-mail/ID.
+- Confirmar contrato dos endpoints de agenda v1, kanban, busca global e lead inbox com token de API.
 - Melhorar tipagem das respostas observadas sem perder compatibilidade com campos desconhecidos.
 - Expandir exemplos de uso com clientes MCP diferentes.
 - Adicionar relatórios exportáveis em JSON/Markdown.
