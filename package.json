@@ -21,6 +21,8 @@
     "examples",
     ".env.example",
     "README.md",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
     "LICENSE"
   ],
   "scripts": {
@@ -29,6 +31,7 @@
     "start": "node dist/index.js",
     "test": "vitest run",
     "test:integration": "vitest run tests/integration.test.ts",
+    "test:live-smoke": "vitest run tests/mcp-live-smoke.test.ts",
     "test:mcp": "vitest run tests/mcp-stdio.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "prepack": "npm run build"

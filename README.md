@@ -1,10 +1,10 @@
 # Leads2b MCP
 
-Servidor MCP comunitário e não oficial para consultar e diagnosticar dados da Leads2b por API.
+Servidor MCP comunitário e não oficial para consultar, diagnosticar e, quando habilitado explicitamente, atualizar dados da Leads2b por API.
 
-O MVP é read-only e ajuda a investigar origens, conversões, tracking, pipelines, usuários, formulários, customers e configuração do snippet sem depender da interface web.
+Por padrão, o servidor sobe somente com ferramentas read-only. Ferramentas de escrita são experimentais, ficam desabilitadas por padrão e exigem confirmação explícita por chamada.
 
-> Status: MVP read-only implementado. A API da Leads2b tem partes documentadas e partes descobertas empiricamente. Este projeto trata contratos não documentados como instáveis.
+> Status: MVP read-only implementado, com primeira ferramenta de escrita opt-in em modo experimental. A API da Leads2b tem partes documentadas e partes descobertas empiricamente. Este projeto trata contratos não documentados como instáveis.
 
 Este projeto não é afiliado, endossado ou mantido pela Leads2b.
 
@@ -17,6 +17,7 @@ Este projeto não é afiliado, endossado ou mantido pela Leads2b.
 - Busca local de customers para descobrir IDs candidatos.
 - Diagnóstico de atribuição com first touch observado, last touch observado e divergências.
 - Normalização local de origem com UTMs, click IDs, referrer e host.
+- Escrita experimental opt-in com `dry_run=true` por padrão.
 - Testes unitários com fixtures fictícias/de exemplo.
 
 ## Documentação Principal
@@ -25,6 +26,7 @@ Este projeto não é afiliado, endossado ou mantido pela Leads2b.
 - [Endpoints da API](docs/API-ENDPOINTS.md)
 - [Ferramentas MCP](docs/MCP-TOOLS.md)
 - [Atribuição e origem](docs/ATRIBUICAO-E-ORIGEM.md)
+- [Ferramentas de escrita](docs/WRITE-TOOLS.md)
 
 ## Bases
 
@@ -57,6 +59,7 @@ LEADS2B_API_V2_TOKEN=
 LEADS2B_API_V1_BASE_URL=https://app.leads2b.com/api/v1
 LEADS2B_API_V2_BASE_URL=https://app.leads2b.com/api/v2
 LEADS2B_PUBLIC_WORKER_URL=https://js.app.leads2b.com
+LEADS2B_ENABLE_WRITE_TOOLS=false
 ```
 
 ## Uso
@@ -108,7 +111,10 @@ Também é possível passar os tokens diretamente na configuração do cliente M
 Exemplos prontos:
 
 - [Configuração MCP genérica](examples/mcp-config.local.json)
+- [Configuração MCP com escrita opt-in](examples/mcp-config.write-tools.local.json)
 - [Configuração para Codex](examples/codex-config.toml)
+- [Prompts de uso](examples/usage-prompts.md)
+- [Exemplo de dry-run de escrita](examples/write-tools-dry-run.example.json)
 
 ## Ferramentas do MVP
 
@@ -154,6 +160,56 @@ Exemplos prontos:
 | `leads2b_normalize_source` | local | Normalizar origem com UTMs/click IDs/referrer. |
 | `leads2b_diagnose_attribution` | v2/local | Calcular first touch observado, last touch observado e divergências. |
 | `leads2b_diagnose_customer_attribution` | v1/v2/local | Buscar customer e diagnosticar eventos v2 em um só passo. |
+
+## Escrita Opt-In
+
+Ferramentas de escrita não ficam ativas por padrão. Para registrá-las no MCP, configure:
+
+```txt
+LEADS2B_ENABLE_WRITE_TOOLS=true
+```
+
+Mesmo habilitadas, elas não executam alterações sem todos estes campos:
+
+```ts
+{
+  dry_run: false;
+  confirm_live: true;
+  reason: string;
+}
+```
+
+Ferramenta experimental disponível:
+
+| Ferramenta | API | Finalidade |
+|---|---|---|
+| `leads2b_update_customer` | v2 | Atualizar campos de um customer por ID. |
+
+Uso em dry-run:
+
+```ts
+{
+  id: 123,
+  fields: {
+    name: "Example"
+  },
+  reason: "Atualização solicitada pelo usuário."
+}
+```
+
+Execução real:
+
+```ts
+{
+  id: 123,
+  fields: {
+    name: "Example"
+  },
+  dry_run: false,
+  confirm_live: true,
+  reason: "Atualização solicitada pelo usuário."
+}
+```
 
 `leads2b_list_customers` sem opções retorna a resposta integral da API. Para reduzir volume no uso interativo, a ferramenta aceita filtros locais:
 
@@ -326,6 +382,12 @@ Testes de integração read-only são opt-in e exigem `.env` configurado:
 RUN_LEADS2B_INTEGRATION_TESTS=true npm run test:integration
 ```
 
+Smoke MCP live via `stdio`, também opt-in:
+
+```bash
+RUN_LEADS2B_INTEGRATION_TESTS=true npm run test:live-smoke
+```
+
 ## Stack
 
 - TypeScript + Node.js.
@@ -351,6 +413,17 @@ src/
     health.ts
     read.ts
     attribution.ts
+    write.ts
+    read/
+      calendar.ts
+      catalog.ts
+      customers.ts
+      events.ts
+      pipelines.ts
+      shared.ts
+      snippet.ts
+  safety/
+    write-gates.ts
   attribution/
     normalize.ts
     candidates.ts

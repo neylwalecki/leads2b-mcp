@@ -1,6 +1,6 @@
 # Ferramentas MCP
 
-Este documento descreve as ferramentas read-only implementadas no MVP.
+Este documento descreve as ferramentas implementadas no MVP. O servidor é read-only por padrão; ferramentas de escrita são opt-in.
 
 ## Convenções de Design
 
@@ -81,6 +81,7 @@ type ToolError = {
 | `leads2b_find_attribution_candidates` | v1/v2/local | `/customer/index` + conversões/tracking | Encontrar IDs existentes com eventos de atribuição. |
 | `leads2b_diagnose_attribution` | v2/local | conversões + tracking | Diagnosticar first/last touch e inconsistências. |
 | `leads2b_diagnose_customer_attribution` | v1/v2/local | `/customer/index` + conversões/tracking | Buscar customer por critério e diagnosticar eventos em um só passo. |
+| `leads2b_update_customer` | v2 | `/customer/{id}` | Atualizar customer. Experimental e registrado somente com `LEADS2B_ENABLE_WRITE_TOOLS=true`. |
 
 ## Detalhes das Ferramentas
 
@@ -102,6 +103,43 @@ Saída esperada:
 - Token v2 válido: sim/não.
 - Expiração do token v2, se detectável no JWT.
 - Ferramentas disponíveis.
+- Estado das ferramentas de escrita.
+
+## Ferramentas de Escrita
+
+Ferramentas de escrita exigem opt-in por ambiente:
+
+```txt
+LEADS2B_ENABLE_WRITE_TOOLS=true
+```
+
+Além disso, cada chamada real exige:
+
+- `dry_run=false`.
+- `confirm_live=true`.
+- `reason` preenchido.
+
+Sem esses campos, a ferramenta retorna apenas o plano de execução e não chama a API de escrita.
+
+### `leads2b_update_customer`
+
+Entrada:
+
+```ts
+type Input = {
+  id: string | number;
+  fields: Record<string, unknown>;
+  dry_run?: boolean;
+  confirm_live?: boolean;
+  reason: string;
+};
+```
+
+Comportamento:
+
+- Com `dry_run` ausente ou `true`, retorna o endpoint, método, campos e avisos.
+- Com `dry_run=false`, `confirm_live=true` e `reason`, chama `PATCH /api/v2/customer/{id}`.
+- Retorna `executed=false` em dry-run e `executed=true` somente quando a chamada real é enviada.
 
 ### Ferramentas de Catálogo e Operação
 

@@ -14,12 +14,34 @@ const optionalTrimmedString = z.preprocess((value) => {
   return trimmed === "" ? undefined : trimmed;
 }, z.string().optional());
 
+const optionalBoolean = z.preprocess((value) => {
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  if (["true", "1", "yes", "y", "on"].includes(normalized)) {
+    return true;
+  }
+
+  if (["false", "0", "no", "n", "off", ""].includes(normalized)) {
+    return false;
+  }
+
+  return value;
+}, z.boolean().optional());
+
 const EnvSchema = z.object({
   LEADS2B_API_V1_TOKEN: optionalTrimmedString,
   LEADS2B_API_V2_TOKEN: optionalTrimmedString,
   LEADS2B_API_V1_BASE_URL: optionalTrimmedString.default(DEFAULT_V1_BASE_URL),
   LEADS2B_API_V2_BASE_URL: optionalTrimmedString.default(DEFAULT_V2_BASE_URL),
-  LEADS2B_PUBLIC_WORKER_URL: optionalTrimmedString.default(DEFAULT_PUBLIC_WORKER_URL)
+  LEADS2B_PUBLIC_WORKER_URL: optionalTrimmedString.default(DEFAULT_PUBLIC_WORKER_URL),
+  LEADS2B_ENABLE_WRITE_TOOLS: optionalBoolean.default(false)
 });
 
 export type Leads2bConfig = {
@@ -28,6 +50,7 @@ export type Leads2bConfig = {
   apiV1BaseUrl: string;
   apiV2BaseUrl: string;
   publicWorkerUrl: string;
+  writeToolsEnabled: boolean;
 };
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Leads2bConfig {
@@ -38,7 +61,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Leads2bConfig 
     apiV2Token: parsed.LEADS2B_API_V2_TOKEN,
     apiV1BaseUrl: parsed.LEADS2B_API_V1_BASE_URL,
     apiV2BaseUrl: parsed.LEADS2B_API_V2_BASE_URL,
-    publicWorkerUrl: parsed.LEADS2B_PUBLIC_WORKER_URL
+    publicWorkerUrl: parsed.LEADS2B_PUBLIC_WORKER_URL,
+    writeToolsEnabled: parsed.LEADS2B_ENABLE_WRITE_TOOLS
   };
 }
 

@@ -9,7 +9,10 @@ export type Leads2bHttpClientOptions = {
 export type Leads2bRequestOptions = {
   query?: Record<string, string | number | boolean | Array<string | number | boolean> | undefined>;
   headers?: Record<string, string>;
+  body?: unknown;
 };
+
+type Leads2bHttpMethod = "GET" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 export class Leads2bHttpError extends Error {
   readonly status?: number;
@@ -44,11 +47,23 @@ export class Leads2bHttpClient {
     return this.request<T>("GET", path, options);
   }
 
-  async request<T>(
-    method: "GET" | "OPTIONS",
-    path: string,
-    options: Leads2bRequestOptions = {}
-  ): Promise<T> {
+  async post<T>(path: string, options: Leads2bRequestOptions = {}): Promise<T> {
+    return this.request<T>("POST", path, options);
+  }
+
+  async put<T>(path: string, options: Leads2bRequestOptions = {}): Promise<T> {
+    return this.request<T>("PUT", path, options);
+  }
+
+  async patch<T>(path: string, options: Leads2bRequestOptions = {}): Promise<T> {
+    return this.request<T>("PATCH", path, options);
+  }
+
+  async delete<T>(path: string, options: Leads2bRequestOptions = {}): Promise<T> {
+    return this.request<T>("DELETE", path, options);
+  }
+
+  async request<T>(method: Leads2bHttpMethod, path: string, options: Leads2bRequestOptions = {}): Promise<T> {
     if (!this.token) {
       throw new Leads2bHttpError({
         message: `Token da API ${this.api} não configurado.`,
@@ -57,13 +72,16 @@ export class Leads2bHttpClient {
     }
 
     const url = this.buildUrl(path, options.query);
+    const body = options.body === undefined ? undefined : JSON.stringify(options.body);
     const response = await fetch(url, {
       method,
       headers: {
         Accept: "application/json",
+        ...(body === undefined ? {} : { "Content-Type": "application/json" }),
         Authorization: `Bearer ${this.token}`,
         ...options.headers
-      }
+      },
+      body
     });
     const responseText = await response.text();
     const parsedBody = parseResponseBody(responseText);

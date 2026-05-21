@@ -5,6 +5,7 @@
 Status:
 
 - `Confirmado`: endpoint testado e respondeu com sucesso.
+- `Experimental`: contrato observado, mas sem teste live de mutação real neste repositório.
 - `Não confirmado`: endpoint visto no app, mas ainda não respondeu corretamente com token de API no MCP.
 - `A pesquisar`: endpoint desejado, mas ainda não encontrado.
 
@@ -60,10 +61,10 @@ https://app.leads2b.com/api/v1
 | `/customer/index` | GET | Confirmado | Clientes existentes da conta | Retorna `data.customers[]` com `id` e campos cadastrais. Útil para descobrir IDs candidatos para conversões/tracking. | MVP |
 | `/lead/index/{id}/defaultLead` | GET | Confirmado | Detalhe de lead | Usa ID de lead/customer aceito pela API. | MVP |
 | `/custom_table/simple_tables` | GET | Não confirmado | Tabelas customizadas simples | Falhou com HTTP 500 em teste com token de API. | Depois |
-| `/schedule/index/` | GET | Não confirmado | Agenda/lista de atividades | Endpoint observado no app, mas falhou com HTTP 500 em teste com token de API. | Depois |
-| `/schedule/count/` | GET | Não confirmado | Contadores de atividades | Endpoint observado no app, mas falhou com HTTP 500 em teste com token de API. | Depois |
-| `/globalSearch/searchV2/` | GET | Não confirmado | Busca global | Endpoint observado no app, mas falhou com HTTP 500 em teste com token de API. | Depois |
-| `/pipeline/kanbanData/{id}` | GET | Não confirmado | Cards do kanban por pipeline | Endpoint observado no app, mas falhou com HTTP 500 em teste com token de API. | Depois |
+| `/schedule/index/` | GET | Não confirmado | Agenda/lista de atividades | Endpoint observado no app, mas falhou com HTTP 500 em testes com token de API. Use `/mail/calendars/events` no MVP. | Depois |
+| `/schedule/count/` | GET | Não confirmado | Contadores de atividades | Endpoint observado no app, mas falhou com HTTP 500 em testes com token de API. | Depois |
+| `/globalSearch/searchV2/` | GET | Não confirmado | Busca global | Falhou com HTTP 500 para `lead`, `customer`, `opportunity` e vazio; `contact` respondeu HTTP 400. | Depois |
+| `/pipeline/kanbanData/{id}` | GET | Não confirmado | Cards do kanban por pipeline | Endpoint observado no app, mas falhou com HTTP 500 em teste com token de API e pipeline observado. | Depois |
 
 ## API v2
 
@@ -79,6 +80,7 @@ https://app.leads2b.com/api/v2
 | `/webhooks` | GET | Confirmado | Webhooks configurados | Pode retornar lista vazia quando não houver webhooks configurados. | MVP |
 | `/customer` | GET | Confirmado | Lista e busca server-side de customers | Aceita `search` para filtrar. | MVP |
 | `/customer/{id}` | GET | Confirmado | Detalhe de customer | Usa ID retornado em `/customer`. | MVP |
+| `/customer/{id}` | PATCH | Experimental | Atualização de customer | Exposto apenas por ferramenta opt-in com dry-run padrão. | Escrita opt-in |
 | `/markets/cnaes/all` | GET | Confirmado | CNAEs/mercados | Útil para filtros e segmentação. | MVP |
 | `/mail/accounts` | GET | Confirmado | Contas de e-mail conectadas | Pode retornar lista vazia. | MVP |
 | `/mail/calendars/events` | GET | Confirmado | Eventos de calendário | Aceita arrays `users[]`, `calendars[]`, `types[]` e janela `start`/`end`. | MVP |
@@ -86,7 +88,7 @@ https://app.leads2b.com/api/v2
 | `/feedbacks/company` | GET | Confirmado | Feedbacks da empresa | Endpoint de conta/empresa, não de lead individual. | MVP |
 | `/companies/event` | GET | Confirmado | Eventos/recompensas da empresa | Endpoint de conta/empresa. | MVP |
 | `/users/filters?name=leadsColumns` | GET | Confirmado | Filtro salvo de colunas de leads | Respondeu com `data: null` no teste com token de API. | Depois |
-| `/deals/lead-inbox` | GET | Não confirmado | Inbox de leads/deals | Endpoint observado no app, mas falhou com HTTP 404 em teste com token de API. | Depois |
+| `/deals/lead-inbox` | GET | Não confirmado | Inbox de leads/deals | Endpoint observado no app, mas falhou com HTTP 404 em testes com e sem paginação. | Depois |
 | `/integrations/config/token` | GET | Confirmado | Token público do snippet | Não confundir com token privado de API. | MVP |
 | `/integrations/config/script` | GET | Confirmado | Script completo do snippet | Útil para validar instalação. | MVP |
 | `/markets/countries` | GET | Confirmado | Países/mercados | Baixa prioridade operacional. | Depois |

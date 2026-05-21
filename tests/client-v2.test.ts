@@ -89,6 +89,33 @@ describe("Leads2bV2Client", () => {
     ]);
   });
 
+  it("calls the experimental customer update endpoint", async () => {
+    const calls: Array<{ path: string; body?: unknown }> = [];
+    const http = {
+      patch: async (path: string, options?: { body?: unknown }) => {
+        calls.push({ path, body: options?.body });
+        return { data: { id: 123 } };
+      }
+    } as unknown as Leads2bHttpClient;
+    const client = new Leads2bV2Client(http);
+
+    await client.updateCustomer({
+      id: 123,
+      fields: {
+        name: "Example"
+      }
+    });
+
+    expect(calls).toEqual([
+      {
+        path: "/customer/123",
+        body: {
+          name: "Example"
+        }
+      }
+    ]);
+  });
+
   it("calls the observed calendar events endpoint with array filters", async () => {
     const calls: Array<{ path: string; query?: Record<string, unknown> }> = [];
     const http = {

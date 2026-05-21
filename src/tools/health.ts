@@ -4,6 +4,7 @@ import { Leads2bConfig, getJwtExpiration } from "../config.js";
 import { Leads2bV1Client } from "../client/v1.js";
 import { Leads2bV2Client } from "../client/v2.js";
 import { okResult } from "./result.js";
+import { WRITE_TOOL_NAMES } from "./write.js";
 
 type HealthDeps = {
   config: Leads2bConfig;
@@ -87,7 +88,8 @@ export function registerHealthTool(server: McpServer, deps: HealthDeps): void {
         ...LOCAL_TOOLS,
         ...(v1Health.ok ? V1_TOOLS : []),
         ...(v2Health.ok ? V2_TOOLS : []),
-        ...(v1Health.ok && v2Health.ok ? CROSS_API_TOOLS : [])
+        ...(v1Health.ok && v2Health.ok ? CROSS_API_TOOLS : []),
+        ...(deps.config.writeToolsEnabled && v2Health.ok ? WRITE_TOOL_NAMES : [])
       ];
       const warnings: string[] = [];
 
@@ -116,6 +118,10 @@ export function registerHealthTool(server: McpServer, deps: HealthDeps): void {
             v1: deps.config.apiV1BaseUrl,
             v2: deps.config.apiV2BaseUrl,
             publicWorker: deps.config.publicWorkerUrl
+          },
+          writeTools: {
+            enabled: deps.config.writeToolsEnabled,
+            availableTools: deps.config.writeToolsEnabled ? WRITE_TOOL_NAMES : []
           },
           availableTools
         },

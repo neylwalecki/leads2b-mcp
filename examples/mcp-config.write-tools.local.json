@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "leads2b": {
+      "command": "node",
+      "args": ["/absolute/path/to/leads2b-mcp/dist/index.js"],
+      "cwd": "/absolute/path/to/leads2b-mcp",
+      "env": {
+        "LEADS2B_API_V1_TOKEN": "<TOKEN_V1>",
+        "LEADS2B_API_V2_TOKEN": "<TOKEN_V2>",
+        "LEADS2B_ENABLE_WRITE_TOOLS": "true"
+      }
+    }
+  }
+}

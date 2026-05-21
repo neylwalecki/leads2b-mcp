@@ -8,6 +8,7 @@ import { loadConfig } from "./config.js";
 import { registerAttributionTools } from "./tools/attribution.js";
 import { registerHealthTool } from "./tools/health.js";
 import { registerReadTools } from "./tools/read.js";
+import { registerWriteTools } from "./tools/write.js";
 
 const config = loadConfig();
 
@@ -34,6 +35,10 @@ const server = new McpServer({
 registerHealthTool(server, { config, v1, v2 });
 registerReadTools(server, { v1, v2 });
 registerAttributionTools(server, { v1, v2 });
+
+if (config.writeToolsEnabled) {
+  registerWriteTools(server, { v2 });
+}
 
 try {
   await server.connect(new StdioServerTransport());

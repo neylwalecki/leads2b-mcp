@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { ChildProcessWithoutNullStreams, spawn } from "node:child_process";
 import { setTimeout as delay } from "node:timers/promises";
 import { afterEach, describe, expect, it } from "vitest";
@@ -20,22 +21,17 @@ type PendingRequest = {
   reject: (error: Error) => void;
 };
 
-class McpStdioTestClient {
+class LiveMcpClient {
   private readonly process: ChildProcessWithoutNullStreams;
   private readonly pending = new Map<JsonRpcId, PendingRequest>();
   private buffer = "";
   private nextId = 1;
   private stderr = "";
 
-  constructor(env: NodeJS.ProcessEnv = {}) {
+  constructor() {
     this.process = spawn(process.execPath, ["--import", "tsx", "src/index.ts"], {
       cwd: process.cwd(),
-      env: {
-        ...process.env,
-        LEADS2B_API_V1_TOKEN: "",
-        LEADS2B_API_V2_TOKEN: "",
-        ...env
-      },
+      env: process.env,
       stdio: ["pipe", "pipe", "pipe"]
     });
 
@@ -58,7 +54,7 @@ class McpStdioTestClient {
       protocolVersion: "2025-11-25",
       capabilities: {},
       clientInfo: {
-        name: "leads2b-mcp-stdio-test",
+        name: "leads2b-mcp-live-smoke",
         version: "0.1.0"
       }
     });
@@ -81,7 +77,7 @@ class McpStdioTestClient {
     });
 
     this.process.stdin.write(`${JSON.stringify(message)}\n`);
-    return withTimeout(response, 3_000, method);
+    return withTimeout(response, 10_000, method);
   }
 
   notify(method: string, params: Record<string, unknown> = {}): void {
@@ -115,7 +111,7 @@ class McpStdioTestClient {
       let message: JsonRpcResponse;
       try {
         message = JSON.parse(line) as JsonRpcResponse;
-      } catch (error) {
+      } catch {
         this.rejectPending(new Error(`MCP stdout emitted non-JSON content: ${line}`));
         return;
       }
@@ -145,122 +141,72 @@ class McpStdioTestClient {
   }
 }
 
-let client: McpStdioTestClient | undefined;
+const runIntegration = process.env.RUN_LEADS2B_INTEGRATION_TESTS === "true";
+
+let client: LiveMcpClient | undefined;
 
 afterEach(async () => {
   await client?.stop();
   client = undefined;
 });
 
-describe("MCP stdio server", () => {
-  it("starts, lists read-only tools and calls local attribution normalization", async () => {
-    client = new McpStdioTestClient();
+describe.skipIf(!runIntegration)("Leads2b MCP live smoke", () => {
+  it("calls representative read-only tools through stdio", async () => {
+    expect(process.env.LEADS2B_API_V1_TOKEN).toBeTruthy();
+    expect(process.env.LEADS2B_API_V2_TOKEN).toBeTruthy();
+
+    client = new LiveMcpClient();
 
     const initialized = await client.initialize();
     expect(initialized.error).toBeUndefined();
-    expect(initialized.result?.serverInfo).toMatchObject({
-      name: "leads2b-mcp",
-      version: "0.1.0"
-    });
 
-    const listed = await client.request("tools/list");
-    expect(listed.error).toBeUndefined();
-
-    const tools = listed.result?.tools;
-    expect(Array.isArray(tools)).toBe(true);
-
-    const toolNames = (tools as Array<{ name: string }>).map((tool) => tool.name);
-    expect(toolNames).not.toContain("leads2b_update_customer");
-    expect(toolNames).toEqual(
-      expect.arrayContaining([
-        "leads2b_health_check",
-        "leads2b_find_customer",
-        "leads2b_search_customers",
-        "leads2b_get_customer",
-        "leads2b_get_lead_detail",
-        "leads2b_get_dashboard_counts",
-        "leads2b_list_pipelines_by_entity",
-        "leads2b_list_users_by_access_level",
-        "leads2b_list_loss_reasons",
-        "leads2b_list_tags",
-        "leads2b_list_cnaes",
-        "leads2b_list_mail_accounts",
-        "leads2b_list_company_feedbacks",
-        "leads2b_get_company_events",
-        "leads2b_list_calendar_events",
-        "leads2b_list_segmentations",
-        "leads2b_list_chrome_extension_users",
-        "leads2b_list_actions",
-        "leads2b_search_campaigns",
-        "leads2b_search_flows",
-        "leads2b_count_deals",
-        "leads2b_get_entity_columns",
-        "leads2b_list_customer_types",
-        "leads2b_get_receita_by_cnpj",
-        "leads2b_diagnose_customer_attribution",
-        "leads2b_normalize_source"
-      ])
-    );
-
-    const normalized = await client.request("tools/call", {
-      name: "leads2b_normalize_source",
-      arguments: {
-        utm_source: "chatgpt.com",
-        host: "example.com",
-        vendorLeadOrigin: "organic | Twitter"
-      }
-    });
-
-    expect(normalized.error).toBeUndefined();
-    expect(normalized.result?.isError).toBeUndefined();
-    expect(normalized.result?.structuredContent).toMatchObject({
+    const health = await callTool("leads2b_health_check", {});
+    expect(health.result?.structuredContent).toMatchObject({
       ok: true,
       data: {
-        channel: "ai_referral",
-        normalizedSource: "AI / LLM Referral"
-      }
-    });
-  });
-
-  it("lists write tools only when explicitly enabled and keeps dry-run safe", async () => {
-    client = new McpStdioTestClient({
-      LEADS2B_ENABLE_WRITE_TOOLS: "true"
-    });
-
-    await client.initialize();
-
-    const listed = await client.request("tools/list");
-    expect(listed.error).toBeUndefined();
-
-    const tools = listed.result?.tools;
-    expect(Array.isArray(tools)).toBe(true);
-
-    const toolNames = (tools as Array<{ name: string }>).map((tool) => tool.name);
-    expect(toolNames).toContain("leads2b_update_customer");
-
-    const dryRun = await client.request("tools/call", {
-      name: "leads2b_update_customer",
-      arguments: {
-        id: 123,
-        fields: {
-          name: "Example"
+        tokens: {
+          v1Configured: true,
+          v2Configured: true
         },
-        reason: "Teste de dry-run sem chamada externa."
+        apis: {
+          v1: { ok: true },
+          v2: { ok: true }
+        }
       }
     });
 
-    expect(dryRun.error).toBeUndefined();
-    expect(dryRun.result?.isError).toBeUndefined();
-    expect(dryRun.result?.structuredContent).toMatchObject({
-      ok: true,
-      data: {
-        dryRun: true,
-        executed: false,
-        operation: "update_customer"
-      }
+    await expectToolOk("leads2b_list_pipelines_by_entity", { entity: "LEAD" });
+    await expectToolOk("leads2b_get_dashboard_counts", {});
+    await expectToolOk("leads2b_search_campaigns", {});
+    await expectToolOk("leads2b_list_segmentations", { entity: "OPPORTUNITY", limit: 20, offset: 0 });
+    await expectToolOk("leads2b_list_calendar_events", {
+      calendars: ["leads2b"],
+      types: ["action", "meet"],
+      start: "2026-04-26T03:00:00.000Z",
+      end: "2026-06-07T03:00:00.000Z",
+      limit: 200,
+      offset: 0
     });
-  });
+  }, 30_000);
 });
+
+async function expectToolOk(name: string, args: Record<string, unknown>): Promise<void> {
+  const response = await callTool(name, args);
+  expect(response.error).toBeUndefined();
+  expect(response.result?.isError).toBeUndefined();
+  expect(response.result?.structuredContent).toMatchObject({ ok: true });
+}
+
+async function callTool(name: string, args: Record<string, unknown>): Promise<JsonRpcResponse> {
+  if (!client) {
+    throw new Error("MCP client not initialized.");
+  }
+
+  return client.request("tools/call", {
+    name,
+    arguments: args
+  });
+}
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
   const timeout = delay(timeoutMs).then(() => {

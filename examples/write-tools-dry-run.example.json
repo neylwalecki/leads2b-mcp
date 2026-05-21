@@ -1,0 +1,10 @@
+{
+  "tool": "leads2b_update_customer",
+  "arguments": {
+    "id": 123,
+    "fields": {
+      "name": "Example"
+    },
+    "reason": "Update requested by the account owner."
+  }
+}

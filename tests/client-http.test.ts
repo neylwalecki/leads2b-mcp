@@ -40,4 +40,31 @@ describe("Leads2bHttpClient", () => {
     expect(url.searchParams.get("limit")).toBe("200");
     expect(url.searchParams.has("ignored")).toBe(false);
   });
+
+  it("sends JSON bodies for write requests", async () => {
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => {
+      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+    });
+    globalThis.fetch = fetchMock;
+    const client = new Leads2bHttpClient({
+      api: "v2",
+      baseUrl: "https://app.example.test/api/v2",
+      token: "token"
+    });
+
+    await client.patch("/customer/123", {
+      body: {
+        name: "Example"
+      }
+    });
+
+    const firstCall = fetchMock.mock.calls[0];
+    expect(firstCall).toBeDefined();
+    expect(firstCall?.[0]).toBe("https://app.example.test/api/v2/customer/123");
+    expect(firstCall?.[1]).toMatchObject({
+      method: "PATCH",
+      body: JSON.stringify({ name: "Example" })
+    });
+    expect((firstCall?.[1]?.headers as Record<string, string>)["Content-Type"]).toBe("application/json");
+  });
 });

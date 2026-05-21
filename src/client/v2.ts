@@ -38,6 +38,12 @@ export class Leads2bV2Client {
     return this.http.get(`/customer/${input.id}`);
   }
 
+  updateCustomer(input: { id: string | number; fields: Record<string, unknown> }): Promise<unknown> {
+    return this.http.patch(`/customer/${input.id}`, {
+      body: input.fields
+    });
+  }
+
   listCnaes(): Promise<unknown> {
     return this.http.get("/markets/cnaes/all");
   }
