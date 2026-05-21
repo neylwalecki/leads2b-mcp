@@ -12,7 +12,7 @@ export type Leads2bRequestOptions = {
   body?: unknown;
 };
 
-type Leads2bHttpMethod = "GET" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "DELETE";
+export type Leads2bHttpMethod = "GET" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 export class Leads2bHttpError extends Error {
   readonly status?: number;

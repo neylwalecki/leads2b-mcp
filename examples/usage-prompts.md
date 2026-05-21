@@ -38,10 +38,18 @@ Use `leads2b_list_pipelines_by_entity` for `OPPORTUNITY`, identify the relevant 
 Use `leads2b_get_receita_by_cnpj` with a sanitized or user-provided CNPJ, then summarize company registration fields returned by the account.
 ```
 
-## Customer Update Dry-Run
+## Customer Update Preview
 
-Requires `LEADS2B_ENABLE_WRITE_TOOLS=true`.
+Requires `LEADS2B_WRITE_MODE=preview`.
 
 ```txt
-Call `leads2b_update_customer` with `dry_run` omitted, `id=123`, `fields={"name":"Example"}`, and `reason="Update requested by the account owner."` Show the planned request and confirm that no live change was sent.
+Call `leads2b_update_customer` with `id=123` and `fields={"name":"Example"}`. Show the planned request and confirm that no live change was sent.
+```
+
+## Raw API Probe
+
+Requires `LEADS2B_ENABLE_RAW_API=true`.
+
+```txt
+Call `leads2b_api_request` with `api="v2"`, `method="OPTIONS"` and `path="/customer"`. Summarize the status without exposing tokens.
 ```

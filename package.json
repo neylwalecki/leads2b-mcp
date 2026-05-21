@@ -1,7 +1,7 @@
 {
   "name": "leads2b-mcp",
-  "version": "0.1.0",
-  "description": "Unofficial community MCP server for read-only Leads2b diagnostics.",
+  "version": "0.2.0",
+  "description": "Unofficial community MCP server for Leads2b diagnostics and opt-in CRUD operations.",
   "type": "module",
   "license": "MIT",
   "repository": {

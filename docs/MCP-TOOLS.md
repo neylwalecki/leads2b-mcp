@@ -89,30 +89,47 @@ type ToolResult<T> = {
 
 ## Escrita
 
-Na versão atual, escrita é experimental e registrada somente com:
+Ferramentas de escrita são registradas conforme:
 
 ```txt
-LEADS2B_ENABLE_WRITE_TOOLS=true
+LEADS2B_WRITE_MODE=disabled
+LEADS2B_WRITE_MODE=preview
+LEADS2B_WRITE_MODE=live
 ```
 
 | Ferramenta | API | Status |
 |---|---|---|
+| `leads2b_create_customer` | v2 | Experimental |
 | `leads2b_update_customer` | v2 | Experimental |
 
-Entrada:
+`disabled` não registra ferramentas de escrita. `preview` retorna plano sem alteração real. `live` executa creates e updates simples diretamente.
 
 ```ts
-type Input = {
+type CreateCustomerInput = {
+  fields: Record<string, unknown>;
+};
+
+type UpdateCustomerInput = {
   id: string | number;
   fields: Record<string, unknown>;
-  dry_run?: boolean;
-  confirm_live?: boolean;
-  reason: string;
 };
 ```
 
+## Raw API
+
+Registrada somente com:
+
+```txt
+LEADS2B_ENABLE_RAW_API=true
+```
+
+| Ferramenta | API | Status |
+|---|---|---|
+| `leads2b_api_request` | v1/v2 | Avançada |
+
+`GET` e `OPTIONS` executam direto. Métodos mutantes respeitam `LEADS2B_WRITE_MODE`; delete, bulk e merge exigem `confirm_destructive=true`.
+
 ## Próximas Versões
 
-- Substituir o modelo atual por `LEADS2B_WRITE_MODE=disabled|preview|live`.
-- Expandir CRUD para customers, leads, oportunidades, contatos e atividades.
-- Adicionar uma ferramenta avançada `leads2b_api_request` para usuários que querem acessar endpoints ainda não mapeados.
+- Consolidar contratos de leads, oportunidades, contatos e atividades quando houver endpoints confiáveis.
+- Adicionar ferramentas específicas para deletes apenas com confirmação explícita e plano de recuperação.

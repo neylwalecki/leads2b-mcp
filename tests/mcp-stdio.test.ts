@@ -59,7 +59,7 @@ class McpStdioTestClient {
       capabilities: {},
       clientInfo: {
         name: "leads2b-mcp-stdio-test",
-        version: "0.1.0"
+        version: "0.2.0"
       }
     });
 
@@ -160,7 +160,7 @@ describe("MCP stdio server", () => {
     expect(initialized.error).toBeUndefined();
     expect(initialized.result?.serverInfo).toMatchObject({
       name: "leads2b-mcp",
-      version: "0.1.0"
+      version: "0.2.0"
     });
 
     const listed = await client.request("tools/list");
@@ -171,6 +171,8 @@ describe("MCP stdio server", () => {
 
     const toolNames = (tools as Array<{ name: string }>).map((tool) => tool.name);
     expect(toolNames).not.toContain("leads2b_update_customer");
+    expect(toolNames).not.toContain("leads2b_create_customer");
+    expect(toolNames).not.toContain("leads2b_api_request");
     expect(toolNames).toEqual(
       expect.arrayContaining([
         "leads2b_health_check",
@@ -222,9 +224,9 @@ describe("MCP stdio server", () => {
     });
   });
 
-  it("lists write tools only when explicitly enabled and keeps dry-run safe", async () => {
+  it("lists write tools in preview mode and returns plans without external calls", async () => {
     client = new McpStdioTestClient({
-      LEADS2B_ENABLE_WRITE_TOOLS: "true"
+      LEADS2B_WRITE_MODE: "preview"
     });
 
     await client.initialize();
@@ -237,26 +239,92 @@ describe("MCP stdio server", () => {
 
     const toolNames = (tools as Array<{ name: string }>).map((tool) => tool.name);
     expect(toolNames).toContain("leads2b_update_customer");
+    expect(toolNames).toContain("leads2b_create_customer");
 
-    const dryRun = await client.request("tools/call", {
+    const previewUpdate = await client.request("tools/call", {
       name: "leads2b_update_customer",
       arguments: {
         id: 123,
         fields: {
           name: "Example"
-        },
-        reason: "Teste de dry-run sem chamada externa."
+        }
       }
     });
 
-    expect(dryRun.error).toBeUndefined();
-    expect(dryRun.result?.isError).toBeUndefined();
-    expect(dryRun.result?.structuredContent).toMatchObject({
+    expect(previewUpdate.error).toBeUndefined();
+    expect(previewUpdate.result?.isError).toBeUndefined();
+    expect(previewUpdate.result?.structuredContent).toMatchObject({
       ok: true,
       data: {
-        dryRun: true,
+        mode: "preview",
         executed: false,
         operation: "update_customer"
+      }
+    });
+
+    const previewCreate = await client.request("tools/call", {
+      name: "leads2b_create_customer",
+      arguments: {
+        fields: {
+          name: "Example",
+          email: "lead@example.com"
+        }
+      }
+    });
+
+    expect(previewCreate.error).toBeUndefined();
+    expect(previewCreate.result?.isError).toBeUndefined();
+    expect(previewCreate.result?.structuredContent).toMatchObject({
+      ok: true,
+      data: {
+        mode: "preview",
+        executed: false,
+        operation: "create_customer",
+        method: "POST",
+        endpoint: "/customer"
+      }
+    });
+  });
+
+  it("lists the raw API tool only behind the raw API env flag", async () => {
+    client = new McpStdioTestClient({
+      LEADS2B_WRITE_MODE: "preview",
+      LEADS2B_ENABLE_RAW_API: "true"
+    });
+
+    await client.initialize();
+
+    const listed = await client.request("tools/list");
+    expect(listed.error).toBeUndefined();
+
+    const tools = listed.result?.tools;
+    expect(Array.isArray(tools)).toBe(true);
+
+    const toolNames = (tools as Array<{ name: string }>).map((tool) => tool.name);
+    expect(toolNames).toContain("leads2b_api_request");
+
+    const planned = await client.request("tools/call", {
+      name: "leads2b_api_request",
+      arguments: {
+        api: "v2",
+        method: "POST",
+        path: "/customer",
+        body: {
+          name: "Example"
+        }
+      }
+    });
+
+    expect(planned.error).toBeUndefined();
+    expect(planned.result?.isError).toBeUndefined();
+    expect(planned.result?.structuredContent).toMatchObject({
+      ok: true,
+      data: {
+        api: "v2",
+        mode: "preview",
+        executed: false,
+        method: "POST",
+        endpoint: "/customer"
       }
     });
   });

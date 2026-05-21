@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.0
+
+- Replaced per-call dry-run write gating with `LEADS2B_WRITE_MODE=disabled|preview|live`.
+- Added experimental `leads2b_create_customer`.
+- Simplified `leads2b_update_customer` for direct live updates when write mode is `live`.
+- Added advanced `leads2b_api_request` behind `LEADS2B_ENABLE_RAW_API=true`.
+- Documented current CRUD confidence for customers, leads, opportunities, contacts, and activities.
+
 ## 0.1.0
 
 - Added MCP `stdio` server for Leads2b.

@@ -1,7 +1,13 @@
 import { Leads2bEntity } from "../attribution/normalize.js";
-import { Leads2bHttpClient } from "./http.js";
+import { Leads2bHttpClient, Leads2bHttpMethod, Leads2bRequestOptions } from "./http.js";
 
 export type Leads2bSegmentationEntity = "CUSTOMER" | "LEAD" | "OPPORTUNITY";
+export type Leads2bRawRequestInput = {
+  method: Leads2bHttpMethod;
+  path: string;
+  query?: Leads2bRequestOptions["query"];
+  body?: unknown;
+};
 
 export class Leads2bV2Client {
   constructor(private readonly http: Leads2bHttpClient) {}
@@ -40,6 +46,12 @@ export class Leads2bV2Client {
 
   updateCustomer(input: { id: string | number; fields: Record<string, unknown> }): Promise<unknown> {
     return this.http.patch(`/customer/${input.id}`, {
+      body: input.fields
+    });
+  }
+
+  createCustomer(input: { fields: Record<string, unknown> }): Promise<unknown> {
+    return this.http.post("/customer", {
       body: input.fields
     });
   }
@@ -107,6 +119,13 @@ export class Leads2bV2Client {
         id: input.id,
         entity: input.entity
       }
+    });
+  }
+
+  rawRequest(input: Leads2bRawRequestInput): Promise<unknown> {
+    return this.http.request(input.method, input.path, {
+      query: input.query,
+      body: input.body
     });
   }
 }

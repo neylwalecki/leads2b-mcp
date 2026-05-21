@@ -55,7 +55,7 @@ class LiveMcpClient {
       capabilities: {},
       clientInfo: {
         name: "leads2b-mcp-live-smoke",
-        version: "0.1.0"
+        version: "0.2.0"
       }
     });
 

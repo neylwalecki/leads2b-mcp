@@ -4,6 +4,7 @@ import { Leads2bConfig, getJwtExpiration } from "../config.js";
 import { Leads2bV1Client } from "../client/v1.js";
 import { Leads2bV2Client } from "../client/v2.js";
 import { okResult } from "./result.js";
+import { RAW_API_TOOL_NAME } from "./raw-api.js";
 import { WRITE_TOOL_NAMES } from "./write.js";
 
 type HealthDeps = {
@@ -70,7 +71,7 @@ export function registerHealthTool(server: McpServer, deps: HealthDeps): void {
     "leads2b_health_check",
     {
       title: "Leads2b health check",
-      description: "Valida configuração local, tokens e disponibilidade read-only das APIs v1/v2.",
+      description: "Valida configuração local, tokens, APIs e disponibilidade de ferramentas do MCP.",
       inputSchema: {
         includeSnippet: z.boolean().optional()
       },
@@ -89,7 +90,8 @@ export function registerHealthTool(server: McpServer, deps: HealthDeps): void {
         ...(v1Health.ok ? V1_TOOLS : []),
         ...(v2Health.ok ? V2_TOOLS : []),
         ...(v1Health.ok && v2Health.ok ? CROSS_API_TOOLS : []),
-        ...(deps.config.writeToolsEnabled && v2Health.ok ? WRITE_TOOL_NAMES : [])
+        ...(deps.config.writeMode !== "disabled" && v2Health.ok ? WRITE_TOOL_NAMES : []),
+        ...(deps.config.rawApiEnabled ? [RAW_API_TOOL_NAME] : [])
       ];
       const warnings: string[] = [];
 
@@ -120,8 +122,13 @@ export function registerHealthTool(server: McpServer, deps: HealthDeps): void {
             publicWorker: deps.config.publicWorkerUrl
           },
           writeTools: {
-            enabled: deps.config.writeToolsEnabled,
-            availableTools: deps.config.writeToolsEnabled ? WRITE_TOOL_NAMES : []
+            mode: deps.config.writeMode,
+            registered: deps.config.writeMode !== "disabled",
+            availableTools: deps.config.writeMode !== "disabled" ? WRITE_TOOL_NAMES : []
+          },
+          rawApi: {
+            enabled: deps.config.rawApiEnabled,
+            availableTool: deps.config.rawApiEnabled ? RAW_API_TOOL_NAME : undefined
           },
           availableTools
         },

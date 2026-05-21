@@ -192,4 +192,29 @@ describe("Leads2bV1Client", () => {
 
     expect(calls).toEqual(["/receita/index/00111222000133"]);
   });
+
+  it("passes raw API requests through the v1 HTTP client", async () => {
+    const calls: Array<{ method: string; path: string; query?: Record<string, unknown>; body?: unknown }> = [];
+    const http = {
+      request: async (method: string, path: string, options?: { query?: Record<string, unknown>; body?: unknown }) => {
+        calls.push({ method, path, query: options?.query, body: options?.body });
+        return { data: [] };
+      }
+    } as unknown as Leads2bHttpClient;
+    const client = new Leads2bV1Client(http);
+
+    await client.rawRequest({
+      method: "OPTIONS",
+      path: "/external_resources/create_lead"
+    });
+
+    expect(calls).toEqual([
+      {
+        method: "OPTIONS",
+        path: "/external_resources/create_lead",
+        query: undefined,
+        body: undefined
+      }
+    ]);
+  });
 });

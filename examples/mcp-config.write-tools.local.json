@@ -7,7 +7,8 @@
       "env": {
         "LEADS2B_API_V1_TOKEN": "<TOKEN_V1>",
         "LEADS2B_API_V2_TOKEN": "<TOKEN_V2>",
-        "LEADS2B_ENABLE_WRITE_TOOLS": "true"
+        "LEADS2B_WRITE_MODE": "preview",
+        "LEADS2B_ENABLE_RAW_API": "false"
       }
     }
   }

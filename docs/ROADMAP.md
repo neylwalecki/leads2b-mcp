@@ -8,17 +8,17 @@
 - Health check.
 - Ferramentas read-only para catálogos, customers, leads, snippet, webhooks, conversões e tracking.
 - Diagnóstico de atribuição e normalização local de origem.
-- Primeira ferramenta experimental de atualização de customer.
+- Escrita por modo com `LEADS2B_WRITE_MODE=disabled|preview|live`.
+- Create/update experimental de customers.
+- `leads2b_api_request` atrás de `LEADS2B_ENABLE_RAW_API=true`.
 - Testes unitários, typecheck, build e smoke tests MCP.
 
 ## Próxima Versão
 
-- Substituir `LEADS2B_ENABLE_WRITE_TOOLS` por `LEADS2B_WRITE_MODE=disabled|preview|live`.
-- Simplificar `update_customer` para uso direto em modo `live`.
-- Implementar CRUD de customers.
-- Mapear e validar CRUD de leads, oportunidades, contatos e atividades.
-- Adicionar `leads2b_api_request` para usuários avançados.
-- Manter confirmações fortes apenas para delete, bulk e operações destrutivas.
+- Validar campos obrigatórios e respostas reais de `POST /customer` em ambiente controlado.
+- Consolidar CRUD de leads, oportunidades, contatos e atividades quando endpoints confiáveis forem encontrados.
+- Criar ferramentas específicas para deletes somente com confirmação explícita e plano de recuperação.
+- Adicionar exemplos de payloads sanitizados para create/update de customers.
 
 ## Pesquisa
 

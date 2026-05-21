@@ -5,6 +5,7 @@ Resumo dos endpoints usados ou observados pelo MCP.
 Status:
 
 - `Confirmado`: respondeu com sucesso nos testes do projeto.
+- `Observado`: endpoint existe ou respondeu a probe não mutante, mas o contrato ainda não é estável.
 - `Experimental`: contrato observado, mas ainda não tratado como estável.
 - `Não confirmado`: visto no app, mas ainda não funcionou corretamente via token de API no MCP.
 
@@ -35,6 +36,8 @@ Base: `https://app.leads2b.com/api/v1`
 | `/form/index` | GET | Confirmado | Formulários. |
 | `/lead/columns` | GET | Confirmado | Colunas de lead. |
 | `/lead/index/{id}/defaultLead` | GET | Confirmado | Detalhe de lead. |
+| `/external_resources/create_lead` | OPTIONS | Confirmado | Endpoint público de criação externa de lead; não cria dados. |
+| `/external_resources/create_lead` | POST | Observado | Criação externa de lead documentada na Central de Ajuda da Leads2b; não exposto como ferramenta normal nesta versão. |
 | `/customer/index` | GET | Confirmado | Customers existentes. |
 | `/customer_type` | GET | Confirmado | Tipos de customer. |
 | `/tag/index/` | GET | Confirmado | Tags. |
@@ -62,8 +65,11 @@ Base: `https://app.leads2b.com/api/v2`
 | `/users` | GET | Confirmado | Usuários da conta. |
 | `/webhooks` | GET | Confirmado | Webhooks. |
 | `/customer` | GET | Confirmado | Lista/busca de customers. |
+| `/customer` | OPTIONS | Observado | Endpoint responde a probe não mutante. |
+| `/customer` | POST | Experimental | Criação de customer via `leads2b_create_customer`. |
 | `/customer/{id}` | GET | Confirmado | Detalhe de customer. |
 | `/customer/{id}` | PATCH | Experimental | Atualização de customer. |
+| `/customer/{id}` | OPTIONS | Observado | IDs inválidos podem retornar validação, mas o endpoint existe. |
 | `/markets/cnaes/all` | GET | Confirmado | CNAEs/mercados. |
 | `/markets/countries` | GET | Confirmado | Países/mercados. |
 | `/mail/accounts` | GET | Confirmado | Contas de e-mail. |
@@ -79,6 +85,20 @@ Base: `https://app.leads2b.com/api/v2`
 | `/deals/lead-inbox` | GET | Não confirmado | Falhou com HTTP 404. |
 
 `entity` para conversões/tracking: `LEAD`, `CONTACT` ou `OPPORTUNITY`.
+
+Referência pública observada para criação externa de lead: [Central de Ajuda Leads2b - Integração com WordPress](https://ajuda.leads2b.com/pt-BR/articles/7036518-como-realizar-a-integracao-com-wordpress).
+
+## CRUD Investigado
+
+| Área | Leitura confiável | Escrita exposta | Observações |
+|---|---|---|---|
+| Customers | `GET /customer`, `GET /customer/{id}`, `GET /customer/index` | `POST /customer`, `PATCH /customer/{id}` | Create/update seguem como experimentais. |
+| Leads | `GET /lead/index/{id}/defaultLead` | Não exposta como CRUD normal | `POST /external_resources/create_lead` existe como integração externa, mas precisa contrato próprio. |
+| Oportunidades/deals | `GET /deal/count_deals`, conversões/tracking por `OPPORTUNITY` | Não exposta | Listagens diretas ainda falharam nos probes. |
+| Contatos | Conversões/tracking por `CONTACT` | Não exposta | Endpoints diretos de contato ainda não confiáveis. |
+| Atividades | `GET /mail/calendars/events`, `GET /action/list/` | Não exposta | `schedule` ainda não virou contrato confiável. |
+
+`leads2b_api_request` permite investigar endpoints v1/v2 atrás de `LEADS2B_ENABLE_RAW_API=true`, mas não muda o status público dos contratos.
 
 ## Snippet Público
 

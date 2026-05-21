@@ -1,4 +1,11 @@
-import { Leads2bHttpClient } from "./http.js";
+import { Leads2bHttpClient, Leads2bHttpMethod, Leads2bRequestOptions } from "./http.js";
+
+export type Leads2bRawRequestInput = {
+  method: Leads2bHttpMethod;
+  path: string;
+  query?: Leads2bRequestOptions["query"];
+  body?: unknown;
+};
 
 export type Leads2bPipelineEntity = "LEAD" | "OPPORTUNITY";
 export type Leads2bLossEntity = "OPPORTUNITY";
@@ -142,5 +149,12 @@ export class Leads2bV1Client {
 
   getDefaultLead(input: { id: string | number }): Promise<unknown> {
     return this.http.get(`/lead/index/${input.id}/defaultLead`);
+  }
+
+  rawRequest(input: Leads2bRawRequestInput): Promise<unknown> {
+    return this.http.request(input.method, input.path, {
+      query: input.query,
+      body: input.body
+    });
   }
 }

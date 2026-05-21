@@ -4,7 +4,6 @@
     "id": 123,
     "fields": {
       "name": "Example"
-    },
-    "reason": "Update requested by the account owner."
+    }
   }
 }

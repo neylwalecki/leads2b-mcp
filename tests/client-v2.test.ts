@@ -116,6 +116,64 @@ describe("Leads2bV2Client", () => {
     ]);
   });
 
+  it("calls the experimental customer create endpoint", async () => {
+    const calls: Array<{ path: string; body?: unknown }> = [];
+    const http = {
+      post: async (path: string, options?: { body?: unknown }) => {
+        calls.push({ path, body: options?.body });
+        return { data: { id: 456 } };
+      }
+    } as unknown as Leads2bHttpClient;
+    const client = new Leads2bV2Client(http);
+
+    await client.createCustomer({
+      fields: {
+        name: "Example",
+        email: "lead@example.com"
+      }
+    });
+
+    expect(calls).toEqual([
+      {
+        path: "/customer",
+        body: {
+          name: "Example",
+          email: "lead@example.com"
+        }
+      }
+    ]);
+  });
+
+  it("passes raw API requests through the v2 HTTP client", async () => {
+    const calls: Array<{ method: string; path: string; query?: Record<string, unknown>; body?: unknown }> = [];
+    const http = {
+      request: async (method: string, path: string, options?: { query?: Record<string, unknown>; body?: unknown }) => {
+        calls.push({ method, path, query: options?.query, body: options?.body });
+        return { data: [] };
+      }
+    } as unknown as Leads2bHttpClient;
+    const client = new Leads2bV2Client(http);
+
+    await client.rawRequest({
+      method: "GET",
+      path: "/customer",
+      query: {
+        search: "lead@example.com"
+      }
+    });
+
+    expect(calls).toEqual([
+      {
+        method: "GET",
+        path: "/customer",
+        query: {
+          search: "lead@example.com"
+        },
+        body: undefined
+      }
+    ]);
+  });
+
   it("calls the observed calendar events endpoint with array filters", async () => {
     const calls: Array<{ path: string; query?: Record<string, unknown> }> = [];
     const http = {
