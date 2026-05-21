@@ -6,7 +6,7 @@
 - Configuração por `.env` ou variáveis do cliente MCP.
 - Clientes separados para APIs v1 e v2.
 - Health check.
-- Ferramentas read-only para catálogos, customers, leads, snippet, webhooks, conversões e tracking.
+- Ferramentas de leitura para catálogos, customers, leads, snippet, webhooks, conversões e tracking.
 - Diagnóstico de atribuição e normalização local de origem.
 - Escrita por modo com `LEADS2B_WRITE_MODE=disabled|preview|live`.
 - Create/update experimental de customers.

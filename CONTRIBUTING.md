@@ -29,7 +29,8 @@ When adding endpoints:
 - Keep API v1 and API v2 clients separate.
 - Mark undocumented contracts as `observed` or `experimental`.
 - Add tests without external calls.
-- Add opt-in integration coverage only when the call is read-only.
+- Add opt-in integration coverage only when the call is read-only or preview-only.
+- Never add default tests that mutate a real Leads2b account.
 
 ## Write Tools
 

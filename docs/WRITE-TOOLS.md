@@ -73,6 +73,6 @@ Regras:
 | Leads | Detalhe por ID via v1; criação externa de lead segue como contrato separado e não virou ferramenta normal nesta versão. |
 | Oportunidades/deals | Contadores e eventos de atribuição; CRUD direto ainda não confiável. |
 | Contatos | Eventos de atribuição por `CONTACT`; CRUD direto ainda não confiável. |
-| Atividades | Eventos de calendário read-only; CRUD direto ainda não confiável. |
+| Atividades | Eventos de calendário somente leitura; CRUD direto ainda não confiável. |
 
 Contratos não documentados permanecem marcados como experimentais, observados ou desconhecidos.
