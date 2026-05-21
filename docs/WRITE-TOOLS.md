@@ -1,32 +1,18 @@
 # Ferramentas de Escrita
 
-O servidor é read-only por padrão. Ferramentas de escrita só são registradas quando o usuário habilita explicitamente:
+## Estado Atual
+
+Na `v0.1.0`, escrita é experimental e fica desabilitada por padrão:
 
 ```txt
 LEADS2B_ENABLE_WRITE_TOOLS=true
 ```
 
-## Contrato de Segurança
+Ferramenta disponível:
 
-Toda ferramenta de escrita deve exigir:
-
-- `dry_run=true` por padrão.
-- `confirm_live=true` para execução real.
-- `reason` obrigatório.
-- Resultado estruturado com `executed`.
-- Operações em lote somente em fase própria, com plano de recuperação.
-
-## Ferramentas Disponíveis
-
-### `leads2b_update_customer`
-
-Atualiza um customer pela API v2.
-
-Endpoint experimental:
-
-```http
-PATCH /api/v2/customer/{id}
-```
+| Ferramenta | API | Endpoint |
+|---|---|---|
+| `leads2b_update_customer` | v2 | `PATCH /api/v2/customer/{id}` |
 
 Entrada:
 
@@ -40,32 +26,28 @@ type Input = {
 };
 ```
 
-Dry-run:
+## Próximo Modelo
 
-```json
-{
-  "id": 123,
-  "fields": {
-    "name": "Example"
-  },
-  "reason": "Update requested by the account owner."
-}
+A próxima versão deve trocar o gate por chamada pelo modo operacional:
+
+```txt
+LEADS2B_WRITE_MODE=disabled
+LEADS2B_WRITE_MODE=preview
+LEADS2B_WRITE_MODE=live
 ```
 
-Execução real:
+Direção pretendida:
 
-```json
-{
-  "id": 123,
-  "fields": {
-    "name": "Example"
-  },
-  "dry_run": false,
-  "confirm_live": true,
-  "reason": "Update requested by the account owner."
-}
-```
+- `disabled`: não registra ferramentas de escrita.
+- `preview`: registra escrita, mas retorna plano sem alterar dados.
+- `live`: permite criação e atualização direta.
+- Delete e operações em lote continuam exigindo confirmação explícita.
 
-## Status
+## Escopo de CRUD Planejado
 
-`leads2b_update_customer` está marcado como experimental porque o repositório não executa mutação live em testes automáticos. Antes de tratar o contrato como estável, valide em uma conta de teste ou em um registro descartável.
+- Customers.
+- Leads.
+- Oportunidades/deals.
+- Contatos.
+- Atividades/agendamentos.
+- Tags, origens e campos customizados quando o contrato da API permitir.

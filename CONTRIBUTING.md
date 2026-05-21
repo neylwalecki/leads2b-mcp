@@ -13,7 +13,7 @@ npm run build
 
 ## Data Hygiene
 
-Do not include real Leads2b tokens, authorization headers, lead names, e-mails, phone numbers, customer names, screenshots, or raw API dumps.
+Do not include real Leads2b tokens, authorization headers, account data, lead data, customer data, or raw API dumps.
 
 Use placeholders such as:
 
@@ -33,11 +33,10 @@ When adding endpoints:
 
 ## Write Tools
 
-Write tools must be opt-in and must require:
+Write behavior must be explicit in configuration:
 
-- `dry_run=true` by default.
-- `confirm_live=true` for live execution.
-- `reason` for every live operation.
-- A structured result with `executed` status.
+- `disabled`: no write tools.
+- `preview`: write tools return the planned request.
+- `live`: simple creates and updates may execute directly.
 
-Do not add bulk write tools without a separate design and recovery plan.
+Deletes and bulk writes need stronger confirmation and a recovery plan.
