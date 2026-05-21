@@ -1,6 +1,6 @@
 # Leads2b MCP
 
-Servidor MCP comunitário e não oficial para acessar dados da Leads2b por API.
+Servidor MCP para acessar dados da Leads2b por API.
 
 O projeto usa o SDK oficial do MCP, transporte `stdio`, TypeScript, `zod` e clientes HTTP separados para as APIs v1 e v2 da Leads2b.
 
