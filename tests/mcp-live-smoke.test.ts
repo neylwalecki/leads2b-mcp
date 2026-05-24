@@ -179,6 +179,12 @@ describe.skipIf(!runIntegration)("Leads2b MCP live smoke", () => {
     await expectToolOk("leads2b_get_dashboard_counts", {});
     await expectToolOk("leads2b_search_campaigns", {});
     await expectToolOk("leads2b_list_segmentations", { entity: "OPPORTUNITY", limit: 20, offset: 0 });
+    await expectToolOk("leads2b_list_recent_opportunities", { limit: 1, fetchLimit: 1 });
+    await expectToolOk("leads2b_get_lead_ops_candidates", {
+      includeRecentOpportunities: true,
+      limit: 1,
+      fetchLimit: 1
+    });
     await expectToolOk("leads2b_list_calendar_events", {
       calendars: ["leads2b"],
       types: ["action", "meet"],

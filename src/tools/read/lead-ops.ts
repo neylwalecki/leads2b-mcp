@@ -101,7 +101,7 @@ export function registerLeadOpsTools(server: McpServer, deps: ReadDeps): void {
     {
       title: "List recent opportunities",
       description:
-        "Lista oportunidades recentes via /deals e aplica filtros locais por data, status, funil, etapa, responsável e busca textual.",
+        "Lista oportunidades recentes via /deals e aplica filtros locais por data de criação, status, funil, etapa, responsável e busca textual.",
       inputSchema: {
         createdFrom: z.string().min(1).optional(),
         createdTo: z.string().min(1).optional(),

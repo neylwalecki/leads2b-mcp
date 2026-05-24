@@ -467,7 +467,9 @@ function recordMatchesCriteria(record: LeadOpsRecord, criteria: RecordSearchCrit
   }
 
   if (criteria.document) {
-    checks.push(onlyDigits(record.basic.document) === onlyDigits(criteria.document));
+    const needle = onlyDigits(criteria.document);
+    const document = onlyDigits(record.basic.document);
+    checks.push(Boolean(needle && document) && document === needle);
   }
 
   if (criteria.name) {
@@ -493,11 +495,11 @@ function opportunityMatchesFilters(
     search?: string;
   }
 ): boolean {
-  if (filters.createdFrom && !dateAtOrAfter(bestDate(opportunity), filters.createdFrom)) {
+  if (filters.createdFrom && !dateAtOrAfter(opportunity.dates.createdAt, filters.createdFrom)) {
     return false;
   }
 
-  if (filters.createdTo && !dateAtOrBefore(bestDate(opportunity), filters.createdTo)) {
+  if (filters.createdTo && !dateAtOrBefore(opportunity.dates.createdAt, filters.createdTo)) {
     return false;
   }
 

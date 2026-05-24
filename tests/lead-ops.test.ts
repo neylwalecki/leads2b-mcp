@@ -100,6 +100,25 @@ describe("findRecordsFromSources", () => {
     ]);
     expect(result.warnings).toContain("Busca direta de CONTACT ainda não tem endpoint confiável; resultados podem ser parciais.");
   });
+
+  it("does not match missing documents when the document search has no digits", () => {
+    const result = findRecordsFromSources({
+      criteria: {
+        document: "../"
+      },
+      dealResponses: [
+        {
+          entity: "OPPORTUNITY",
+          response: opportunityDealsResponse
+        }
+      ],
+      requestedEntities: ["OPPORTUNITY"],
+      limit: 10
+    });
+
+    expect(result.records).toHaveLength(0);
+    expect(result.matchedTotal).toBe(0);
+  });
 });
 
 describe("listRecentOpportunitiesFromDeals", () => {
@@ -135,6 +154,49 @@ describe("listRecentOpportunitiesFromDeals", () => {
       })
     ]);
     expect(result.totalAvailable).toBe(2);
+    expect(result.matchedTotal).toBe(1);
+  });
+
+  it("filters createdFrom by createdAt instead of updatedAt", () => {
+    const result = listRecentOpportunitiesFromDeals({
+      response: {
+        data: [
+          {
+            id: "300",
+            type: "OPPORTUNITY",
+            name: "Updated old opportunity",
+            company_name: "Example Industries",
+            mainContactEmail: "old-updated@example.com",
+            origin_name: "Site",
+            pipeline_name: "Sales",
+            pipeline_item_name: "Qualified",
+            user_name: "Sales User",
+            created_at: "2026-05-10T12:00:00.000Z",
+            updated_at: "2026-05-23T12:00:00.000Z"
+          },
+          {
+            id: "301",
+            type: "OPPORTUNITY",
+            name: "New opportunity",
+            company_name: "Example Industries",
+            mainContactEmail: "new@example.com",
+            origin_name: "Site",
+            pipeline_name: "Sales",
+            pipeline_item_name: "Qualified",
+            user_name: "Sales User",
+            created_at: "2026-05-22T12:00:00.000Z"
+          }
+        ],
+        total: 2,
+        entity: "OPPORTUNITY"
+      },
+      filters: {
+        createdFrom: "2026-05-20"
+      },
+      limit: 10
+    });
+
+    expect(result.opportunities.map((opportunity) => opportunity.leads2bId)).toEqual(["301"]);
     expect(result.matchedTotal).toBe(1);
   });
 });
