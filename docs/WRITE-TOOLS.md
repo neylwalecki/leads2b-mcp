@@ -70,9 +70,11 @@ Regras:
 | Área | Status no MCP |
 |---|---|
 | Customers | Lista, busca, detalhe, create experimental e update experimental. |
-| Leads | Detalhe por ID via v1; criação externa de lead segue como contrato separado e não virou ferramenta normal nesta versão. |
-| Oportunidades/deals | Contadores e eventos de atribuição; CRUD direto ainda não confiável. |
+| Leads | Detalhe por ID via v1 e listagem observada via `/deals?entity=LEAD`; criação externa de lead segue como contrato separado e não virou ferramenta normal nesta versão. |
+| Oportunidades/deals | Listagem observada via `/deals?entity=OPPORTUNITY`, contadores e eventos de atribuição; CRUD direto ainda não confiável. |
 | Contatos | Eventos de atribuição por `CONTACT`; CRUD direto ainda não confiável. |
 | Atividades | Eventos de calendário somente leitura; CRUD direto ainda não confiável. |
 
 Contratos não documentados permanecem marcados como experimentais, observados ou desconhecidos.
+
+As ferramentas de operação comercial (`leads2b_find_records`, `leads2b_list_recent_opportunities`, `leads2b_get_record_detail` e `leads2b_get_lead_ops_candidates`) são somente leitura e não alteram o contrato de escrita.

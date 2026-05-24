@@ -66,6 +66,55 @@ type ToolResult<T> = {
 | `leads2b_get_customer` | v2 | Consulta `/customer/{id}`. |
 | `leads2b_get_lead_detail` | v1 | Consulta `/lead/index/{id}/defaultLead`. |
 
+## Operação Comercial de Leads
+
+Ferramentas genéricas, agnósticas por cliente, para automações que alimentam planilhas, CRMs internos e relatórios.
+
+| Ferramenta | API | Observação |
+|---|---|---|
+| `leads2b_find_records` | v1/v2/local | Busca por e-mail, telefone, documento, nome, empresa ou texto em customers e deals disponíveis. |
+| `leads2b_list_recent_opportunities` | v2/local | Lista `/deals?entity=OPPORTUNITY` e aplica filtros locais por data, status, funil, etapa, responsável e texto. |
+| `leads2b_get_record_detail` | v1/v2/local | Retorna detalhe normalizado de `CUSTOMER`, `LEAD`, `CONTACT` ou `OPPORTUNITY`; inclui atribuição quando disponível. |
+| `leads2b_get_lead_ops_candidates` | v1/v2/local | Retorna candidatos com dados básicos, comerciais, atribuição, duplicidades, campos ausentes e warnings. |
+
+Schema resumido de candidato:
+
+```ts
+type LeadOpsCandidate = {
+  technicalId: string;
+  primaryEntity: { id?: string; type: "CUSTOMER" | "LEAD" | "CONTACT" | "OPPORTUNITY" };
+  lead: { name?: string; company?: string; email?: string; phone?: string; document?: string };
+  commercial: {
+    operationalOrigin?: string;
+    pipeline?: string;
+    stage?: string;
+    status?: string;
+    responsible?: string;
+    value?: number;
+    lossReason?: string;
+    dates: Record<string, string | undefined>;
+    customFields?: Record<string, unknown>;
+  };
+  attribution: {
+    firstTouchObserved?: unknown;
+    lastTouchObserved?: unknown;
+    lastConversion?: unknown;
+    conversionPage?: string;
+    utms: Record<string, string | undefined>;
+    clickIds: Record<string, string | undefined>;
+  };
+  duplicateSignals: Array<{ field: string; value: string; recordTechnicalIds: string[] }>;
+  missingFields: string[];
+  warnings: string[];
+};
+```
+
+Observações:
+
+- `CONTACT` ainda não tem endpoint direto confiável; ferramentas retornam warning quando a cobertura for parcial.
+- Filtros de oportunidade são locais sobre a janela buscada por `fetchLimit`.
+- `Origem`/`origin_name` é tratada como origem operacional/cadastral. Atribuição de marketing vem de conversões/tracking, UTMs, click IDs, host e referrer.
+
 ## Atribuição
 
 | Ferramenta | API | Observação |
@@ -76,6 +125,7 @@ type ToolResult<T> = {
 | `leads2b_find_attribution_candidates` | v1/v2/local | Cruza customers v1 com eventos v2 para descobrir IDs úteis. |
 | `leads2b_diagnose_attribution` | v2/local | Calcula first touch observado, last touch observado e divergências. |
 | `leads2b_diagnose_customer_attribution` | v1/v2/local | Busca customer e diagnostica atribuição em uma chamada. |
+| `leads2b_diagnose_records_attribution` | v1/v2/local | Diagnóstico em lote por `records`, `ids` + `entity`, ou `searches`; falhas ficam por registro. |
 
 `entity` deve ser `LEAD`, `CONTACT` ou `OPPORTUNITY`.
 
@@ -131,5 +181,6 @@ LEADS2B_ENABLE_RAW_API=true
 
 ## Próximas Versões
 
-- Consolidar contratos de leads, oportunidades, contatos e atividades quando houver endpoints confiáveis.
+- Consolidar filtros server-side confiáveis para `/deals`.
+- Encontrar endpoint direto confiável para contatos.
 - Adicionar ferramentas específicas para deletes apenas com confirmação explícita e plano de recuperação.

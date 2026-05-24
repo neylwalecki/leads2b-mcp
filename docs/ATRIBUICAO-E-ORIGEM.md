@@ -44,6 +44,7 @@ O MCP calcula:
 - Eventos de conversão.
 - Eventos de tracking.
 - Divergências entre evidência bruta e `lead_origin`.
+- Diagnóstico em lote por registros ou buscas, sem interromper o lote inteiro quando uma entidade não tiver eventos.
 
 O termo “observado” é intencional: o cálculo usa apenas eventos retornados pela API.
 
@@ -56,5 +57,6 @@ O termo “observado” é intencional: o cálculo usa apenas eventos retornados
 - Host/referrer.
 - First touch observado.
 - Last touch observado.
+- Última conversão.
 - Classificação normalizada.
 - Divergências.

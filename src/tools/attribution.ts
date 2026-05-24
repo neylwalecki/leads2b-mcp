@@ -1,5 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { diagnoseAttributionBatch } from "../attribution/batch.js";
 import { findAttributionCandidates } from "../attribution/candidates.js";
 import { diagnoseCustomerAttribution } from "../attribution/customer-diagnosis.js";
 import {
@@ -12,6 +13,7 @@ import {
 import { Leads2bV1Client } from "../client/v1.js";
 import { Leads2bV2Client } from "../client/v2.js";
 import { Leads2bHttpError } from "../client/http.js";
+import { findCustomers } from "../customers/list.js";
 import { errorResult, okResult } from "./result.js";
 
 type AttributionDeps = {
@@ -245,6 +247,159 @@ export function registerAttributionTools(server: McpServer, deps: AttributionDep
       }
     }
   );
+
+  server.registerTool(
+    "leads2b_diagnose_records_attribution",
+    {
+      title: "Diagnose records attribution",
+      description:
+        "Diagnostica atribuição em lote por lista de IDs ou buscas de customers. Cada registro retorna sucesso/erro próprio.",
+      inputSchema: {
+        records: z
+          .array(
+            z.object({
+              id: IdSchema,
+              entity: EntitySchema
+            })
+          )
+          .min(1)
+          .optional(),
+        ids: z.array(IdSchema).min(1).optional(),
+        entity: EntitySchema.optional(),
+        searches: z
+          .array(
+            z.object({
+              search: z.string().min(1).optional(),
+              email: z.string().min(1).optional(),
+              phone: z.string().min(1).optional(),
+              document: z.string().min(1).optional(),
+              name: z.string().min(1).optional(),
+              entities: z.array(EntitySchema).min(1).optional(),
+              customerLimit: z.number().int().min(1).max(25).optional()
+            })
+          )
+          .min(1)
+          .optional(),
+        entities: z.array(EntitySchema).min(1).optional(),
+        customerLimit: z.number().int().min(1).max(25).optional(),
+        includeRaw: z.boolean().optional()
+      },
+      annotations: {
+        readOnlyHint: true
+      }
+    },
+    async ({
+      records,
+      ids,
+      entity,
+      searches,
+      entities = DEFAULT_ENTITIES,
+      customerLimit = 5,
+      includeRaw = false
+    }) => {
+      try {
+        const recordsToDiagnose: Array<{ id: string | number; entity: Leads2bEntity }> = [];
+
+        for (const record of records ?? []) {
+          recordsToDiagnose.push({
+            id: record.id,
+            entity: record.entity as Leads2bEntity
+          });
+        }
+
+        if (ids?.length) {
+          if (!entity) {
+            return errorResult(new Error("Informe entity ao usar ids em lote."));
+          }
+
+          recordsToDiagnose.push(
+            ...ids.map((id) => ({
+              id,
+              entity: entity as Leads2bEntity
+            }))
+          );
+        }
+
+        if (searches?.length) {
+          const customerResponse = await deps.v1.listCustomers();
+
+          for (const search of searches) {
+            if (!search.search && !search.email && !search.phone && !search.document && !search.name) {
+              continue;
+            }
+
+            const matched = findCustomers(customerResponse, {
+              search: search.search,
+              email: search.email,
+              phone: search.phone,
+              document: search.document,
+              name: search.name,
+              limit: search.customerLimit ?? customerLimit,
+              summaryOnly: false
+            });
+            const searchEntities = (search.entities ?? entities) as Leads2bEntity[];
+
+            for (const customer of matched.data.customers) {
+              const customerId = getCustomerId(customer);
+              if (!customerId) {
+                continue;
+              }
+
+              recordsToDiagnose.push(
+                ...searchEntities.map((searchEntity) => ({
+                  id: customerId,
+                  entity: searchEntity
+                }))
+              );
+            }
+          }
+        }
+
+        const uniqueRecords = dedupeAttributionRecords(recordsToDiagnose);
+        if (uniqueRecords.length === 0) {
+          return errorResult(new Error("Informe records, ids ou searches com ao menos um registro diagnosticável."));
+        }
+
+        const data = await diagnoseAttributionBatch({
+          records: uniqueRecords,
+          includeRaw,
+          ignoreLookupError: isEmptyAttributionLookupError,
+          getEvents: async ({ id, entity }) => {
+            const [conversionsResponse, trackingResponse] = await Promise.all([
+              deps.v2.getConversions({ id, entity }),
+              deps.v2.getTracking({ id, entity })
+            ]);
+
+            return {
+              conversions: extractEvents(conversionsResponse),
+              tracking: extractEvents(trackingResponse)
+            };
+          }
+        });
+        const warnings = data.results.flatMap((result) => {
+          if (!result.ok) {
+            return [`${result.entity} ${result.id}: ${result.error}`];
+          }
+
+          return result.warnings.map((warning) => `${result.entity} ${result.id}: ${warning}`);
+        });
+
+        return okResult({
+          ok: true,
+          data,
+          warnings,
+          summary: `Diagnóstico de atribuição em lote: ${data.summary.succeeded}/${data.summary.total} registro(s) concluído(s), ${data.summary.withEvents} com eventos.`,
+          source: {
+            api: "local",
+            endpoint: "/customer/index + /conversions + /conversions/tracking",
+            stability: "observed"
+          }
+        });
+      } catch (error) {
+        return errorResult(error);
+      }
+    }
+  );
 }
 
 function isEmptyAttributionLookupError(error: unknown): boolean {
@@ -261,6 +416,39 @@ function extractEvents(response: unknown): unknown[] {
   }
 
   return [];
+}
+
+function getCustomerId(customer: unknown): string | null {
+  if (!customer || typeof customer !== "object") {
+    return null;
+  }
+
+  const id = (customer as { id?: unknown }).id;
+  if (typeof id !== "string" && typeof id !== "number") {
+    return null;
+  }
+
+  const text = String(id).trim();
+  return text ? text : null;
+}
+
+function dedupeAttributionRecords(
+  records: Array<{ id: string | number; entity: Leads2bEntity }>
+): Array<{ id: string | number; entity: Leads2bEntity }> {
+  const seen = new Set<string>();
+  const unique: Array<{ id: string | number; entity: Leads2bEntity }> = [];
+
+  for (const record of records) {
+    const key = `${record.entity}:${record.id}`;
+    if (seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    unique.push(record);
+  }
+
+  return unique;
 }
 
 function prepareDiagnosis(

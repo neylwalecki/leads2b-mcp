@@ -2,6 +2,7 @@ import { Leads2bEntity } from "../attribution/normalize.js";
 import { Leads2bHttpClient, Leads2bHttpMethod, Leads2bRequestOptions } from "./http.js";
 
 export type Leads2bSegmentationEntity = "CUSTOMER" | "LEAD" | "OPPORTUNITY";
+export type Leads2bDealEntity = "LEAD" | "OPPORTUNITY";
 export type Leads2bRawRequestInput = {
   method: Leads2bHttpMethod;
   path: string;
@@ -42,6 +43,22 @@ export class Leads2bV2Client {
 
   getCustomer(input: { id: string | number }): Promise<unknown> {
     return this.http.get(`/customer/${input.id}`);
+  }
+
+  listDeals(input: {
+    entity: Leads2bDealEntity;
+    limit?: number;
+    offset?: number;
+    search?: string;
+  }): Promise<unknown> {
+    return this.http.get("/deals", {
+      query: {
+        entity: input.entity,
+        limit: input.limit,
+        offset: input.offset,
+        search: input.search
+      }
+    });
   }
 
   updateCustomer(input: { id: string | number; fields: Record<string, unknown> }): Promise<unknown> {

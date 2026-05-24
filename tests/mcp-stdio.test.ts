@@ -200,6 +200,11 @@ describe("MCP stdio server", () => {
         "leads2b_list_customer_types",
         "leads2b_get_receita_by_cnpj",
         "leads2b_diagnose_customer_attribution",
+        "leads2b_find_records",
+        "leads2b_list_recent_opportunities",
+        "leads2b_get_record_detail",
+        "leads2b_get_lead_ops_candidates",
+        "leads2b_diagnose_records_attribution",
         "leads2b_normalize_source"
       ])
     );

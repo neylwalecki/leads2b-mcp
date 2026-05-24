@@ -70,6 +70,8 @@ Base: `https://app.leads2b.com/api/v2`
 | `/customer/{id}` | GET | Confirmado | Detalhe de customer. |
 | `/customer/{id}` | PATCH | Experimental | Atualização de customer. |
 | `/customer/{id}` | OPTIONS | Observado | IDs inválidos podem retornar validação, mas o endpoint existe. |
+| `/deals?entity=OPPORTUNITY` | GET | Observado | Lista oportunidades/deals. Usado por `leads2b_list_recent_opportunities`. |
+| `/deals?entity=LEAD` | GET | Observado | Lista leads/deals quando a conta expõe essa entidade. |
 | `/markets/cnaes/all` | GET | Confirmado | CNAEs/mercados. |
 | `/markets/countries` | GET | Confirmado | Países/mercados. |
 | `/mail/accounts` | GET | Confirmado | Contas de e-mail. |
@@ -83,8 +85,13 @@ Base: `https://app.leads2b.com/api/v2`
 | `/conversions/tracking` | GET | Confirmado | Tracking por `id` e `entity`. |
 | `/users/filters?name=leadsColumns` | GET | Confirmado | Filtro salvo de colunas. |
 | `/deals/lead-inbox` | GET | Não confirmado | Falhou com HTTP 404. |
+| `/deals/{id}` | GET | Não confirmado | Falhou com HTTP 404 nos probes. |
+| `/contacts` | GET/OPTIONS | Não confirmado | Falhou com HTTP 404 nos probes. |
+| `/leads` | GET/OPTIONS | Não confirmado | Falhou com HTTP 404 nos probes. |
 
 `entity` para conversões/tracking: `LEAD`, `CONTACT` ou `OPPORTUNITY`.
+
+`/deals` respondeu com `data`, `total` e `entity`. Campos observados incluem `id`, `type`, `company_name`, `name`, `mainContactEmail`, `mainContactPhone`, `origin_name`, `pipeline_name`, `pipeline_item_name`, `pipeline_item_value`, `user_name`, `created_at` e `parameters`. Filtros além de `entity`, `limit`, `offset` e `search` ainda não são tratados como contrato estável; o MCP aplica filtros finos localmente.
 
 Referência pública observada para criação externa de lead: [Central de Ajuda Leads2b - Integração com WordPress](https://ajuda.leads2b.com/pt-BR/articles/7036518-como-realizar-a-integracao-com-wordpress).
 
@@ -93,8 +100,8 @@ Referência pública observada para criação externa de lead: [Central de Ajuda
 | Área | Leitura confiável | Escrita exposta | Observações |
 |---|---|---|---|
 | Customers | `GET /customer`, `GET /customer/{id}`, `GET /customer/index` | `POST /customer`, `PATCH /customer/{id}` | Create/update seguem como experimentais. |
-| Leads | `GET /lead/index/{id}/defaultLead` | Não exposta como CRUD normal | `POST /external_resources/create_lead` existe como integração externa, mas precisa contrato próprio. |
-| Oportunidades/deals | `GET /deal/count_deals`, conversões/tracking por `OPPORTUNITY` | Não exposta | Listagens diretas ainda falharam nos probes. |
+| Oportunidades/deals | `GET /deals?entity=OPPORTUNITY`, `GET /deal/count_deals`, conversões/tracking por `OPPORTUNITY` | Não exposta | Listagem é observada; detalhe direto por ID ainda não foi confirmado. |
+| Leads | `GET /lead/index/{id}/defaultLead`, `GET /deals?entity=LEAD` | Não exposta como CRUD normal | `POST /external_resources/create_lead` existe como integração externa, mas precisa contrato próprio. |
 | Contatos | Conversões/tracking por `CONTACT` | Não exposta | Endpoints diretos de contato ainda não confiáveis. |
 | Atividades | `GET /mail/calendars/events`, `GET /action/list/` | Não exposta | `schedule` ainda não virou contrato confiável. |
 

@@ -58,13 +58,21 @@ const V2_TOOLS = [
   "leads2b_get_snippet_script",
   "leads2b_search_customers",
   "leads2b_get_customer",
+  "leads2b_list_recent_opportunities",
   "leads2b_get_conversions",
   "leads2b_get_tracking",
   "leads2b_diagnose_attribution"
 ];
 
 const LOCAL_TOOLS = ["leads2b_health_check", "leads2b_normalize_source"];
-const CROSS_API_TOOLS = ["leads2b_find_attribution_candidates", "leads2b_diagnose_customer_attribution"];
+const CROSS_API_TOOLS = [
+  "leads2b_find_attribution_candidates",
+  "leads2b_diagnose_customer_attribution",
+  "leads2b_diagnose_records_attribution",
+  "leads2b_find_records",
+  "leads2b_get_record_detail",
+  "leads2b_get_lead_ops_candidates"
+];
 
 export function registerHealthTool(server: McpServer, deps: HealthDeps): void {
   server.registerTool(

@@ -15,6 +15,8 @@ Este projeto não é afiliado, endossado ou mantido pela Leads2b.
 - Health check de tokens, bases e APIs.
 - Consulta de usuários, origens, pipelines, formulários, customers, webhooks, snippet, conversões e tracking.
 - Busca local e server-side de customers.
+- Camada genérica de operação de leads para encontrar registros, listar oportunidades recentes, obter detalhe normalizado e montar candidatos para planilhas/CRMs internos.
+- Diagnóstico de atribuição em lote por IDs ou buscas.
 - Diagnóstico de atribuição com first touch observado, last touch observado e divergências.
 - Normalização local de origem por UTMs, click IDs, referrer e host.
 - Escrita por modo: `disabled`, `preview` ou `live`.
@@ -82,6 +84,7 @@ Principais grupos:
 - `leads2b_health_check`: valida configuração e disponibilidade.
 - Catálogo e operação: usuários, origens, pipelines, tags, formulários, campos, campanhas, fluxos, ações, motivos de perda e contadores.
 - Customers/leads: listar, buscar, obter detalhe e descobrir IDs úteis.
+- Operação diária: buscar registros, listar oportunidades recentes, obter detalhe normalizado e gerar candidatos de lead ops.
 - Atribuição: conversões, tracking, normalização local e diagnóstico.
 - Snippet/webhooks: configuração do snippet, script e webhooks.
 - Escrita opt-in: `leads2b_create_customer` e `leads2b_update_customer`.

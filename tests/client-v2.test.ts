@@ -40,6 +40,36 @@ describe("Leads2bV2Client", () => {
     expect(calls).toEqual(["/customer/123"]);
   });
 
+  it("calls the observed deals endpoint with entity, pagination and search", async () => {
+    const calls: Array<{ path: string; query?: Record<string, unknown> }> = [];
+    const http = {
+      get: async (path: string, options?: { query?: Record<string, unknown> }) => {
+        calls.push({ path, query: options?.query });
+        return { data: [], total: 0, entity: "OPPORTUNITY" };
+      }
+    } as unknown as Leads2bHttpClient;
+    const client = new Leads2bV2Client(http);
+
+    await client.listDeals({
+      entity: "OPPORTUNITY",
+      limit: 50,
+      offset: 10,
+      search: "lead@example.com"
+    });
+
+    expect(calls).toEqual([
+      {
+        path: "/deals",
+        query: {
+          entity: "OPPORTUNITY",
+          limit: 50,
+          offset: 10,
+          search: "lead@example.com"
+        }
+      }
+    ]);
+  });
+
   it("calls observed v2 account metadata endpoints", async () => {
     const calls: string[] = [];
     const http = {
