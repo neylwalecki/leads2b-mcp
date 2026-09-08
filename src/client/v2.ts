@@ -1,3 +1,4 @@
+import { scanDeals, type DealScanInput } from "./deals.js";
 import { Leads2bEntity } from "../attribution/normalize.js";
 import { Leads2bHttpClient, Leads2bHttpMethod, Leads2bRequestOptions } from "./http.js";
 
@@ -61,16 +62,8 @@ export class Leads2bV2Client {
     });
   }
 
-  updateCustomer(input: { id: string | number; fields: Record<string, unknown> }): Promise<unknown> {
-    return this.http.patch(`/customer/${input.id}`, {
-      body: input.fields
-    });
-  }
-
-  createCustomer(input: { fields: Record<string, unknown> }): Promise<unknown> {
-    return this.http.post("/customer", {
-      body: input.fields
-    });
+  scanDeals(input: DealScanInput) {
+    return scanDeals(this, input);
   }
 
   listCnaes(): Promise<unknown> {

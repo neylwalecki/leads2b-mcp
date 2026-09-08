@@ -44,5 +44,5 @@ export function isDestructiveOperation(method: Leads2bHttpMethod, path: string):
   }
 
   const normalizedPath = path.toLowerCase();
-  return /(^|[/?_-])(bulk|delete|destroy|merge)([/?_-]|$)/.test(normalizedPath);
+  return /(^|[/?_-])(bulk|delete|destroy|merge|convert|conversion|lose|winopportunity|opportunitylost)([/?_-]|$)/.test(normalizedPath);
 }

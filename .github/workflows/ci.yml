@@ -5,33 +5,36 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   test:
-    name: Test
-    runs-on: ubuntu-latest
-
+    name: ${{ matrix.os }} / Node ${{ matrix.node }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node: [22, 24]
+    runs-on: ${{ matrix.os }}
+    env:
+      RUN_LEADS2B_INTEGRATION_TESTS: "false"
+      LEADS2B_WRITE_MODE: disabled
+      LEADS2B_ENABLE_RAW_API: "false"
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: ${{ matrix.node }}
           cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run unit tests
-        run: npm test
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Build
-        run: npm run build
-
-      - name: Verify package contents
-        run: npm pack --dry-run --json
+      - run: npm ci --ignore-scripts
+      - run: npm test
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm audit --omit=dev
+      - run: npm pack --dry-run --json
+      - run: npm run package:mcpb
+      - run: npm run verify:mcpb
+      - uses: actions/upload-artifact@v4
+        with:
+          name: leads2b-mcp-${{ matrix.os }}-node${{ matrix.node }}
+          path: artifacts/*.mcpb*

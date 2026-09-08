@@ -119,61 +119,6 @@ describe("Leads2bV2Client", () => {
     ]);
   });
 
-  it("calls the experimental customer update endpoint", async () => {
-    const calls: Array<{ path: string; body?: unknown }> = [];
-    const http = {
-      patch: async (path: string, options?: { body?: unknown }) => {
-        calls.push({ path, body: options?.body });
-        return { data: { id: 123 } };
-      }
-    } as unknown as Leads2bHttpClient;
-    const client = new Leads2bV2Client(http);
-
-    await client.updateCustomer({
-      id: 123,
-      fields: {
-        name: "Example"
-      }
-    });
-
-    expect(calls).toEqual([
-      {
-        path: "/customer/123",
-        body: {
-          name: "Example"
-        }
-      }
-    ]);
-  });
-
-  it("calls the experimental customer create endpoint", async () => {
-    const calls: Array<{ path: string; body?: unknown }> = [];
-    const http = {
-      post: async (path: string, options?: { body?: unknown }) => {
-        calls.push({ path, body: options?.body });
-        return { data: { id: 456 } };
-      }
-    } as unknown as Leads2bHttpClient;
-    const client = new Leads2bV2Client(http);
-
-    await client.createCustomer({
-      fields: {
-        name: "Example",
-        email: "lead@example.com"
-      }
-    });
-
-    expect(calls).toEqual([
-      {
-        path: "/customer",
-        body: {
-          name: "Example",
-          email: "lead@example.com"
-        }
-      }
-    ]);
-  });
-
   it("passes raw API requests through the v2 HTTP client", async () => {
     const calls: Array<{ method: string; path: string; query?: Record<string, unknown>; body?: unknown }> = [];
     const http = {

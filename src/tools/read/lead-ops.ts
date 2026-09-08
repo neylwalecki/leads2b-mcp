@@ -1,3 +1,5 @@
+import { scanLeadOps } from "../../lead-ops/scan.js";
+import { loadAttributionForRecords } from "../../lead-ops/attribution.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { diagnoseAttributionBatch } from "../../attribution/batch.js";
@@ -26,6 +28,31 @@ const SearchCriteriaSchema = {
 };
 
 export function registerLeadOpsTools(server: McpServer, deps: ReadDeps): void {
+  server.registerTool("leads2b_scan_lead_ops", {
+    title: "Scan lead operations",
+    description: "Coleta paginada de customers, leads e oportunidades, com janela de criação, candidatos e cobertura explícita. Não grava em planilhas nem no CRM.",
+    inputSchema: {
+      entities: z.array(z.enum(["CUSTOMER", "LEAD", "OPPORTUNITY"])).min(1).optional(),
+      createdFrom: z.string().min(1).optional(),
+      createdTo: z.string().min(1).optional(),
+      pageSize: z.number().int().min(1).max(500).optional(),
+      maxPages: z.number().int().min(1).max(20).optional(),
+      limit: z.number().int().min(1).max(500).optional(),
+      offset: z.number().int().min(0).optional(),
+      apiTimestampOffset: z.string().regex(/^[+-](?:0[0-9]|1[0-4]):[0-5][0-9]$/).optional().describe("Correção de timestamps Z rotulados incorretamente; usar somente após validar o horário real da conta."),
+      includeAttribution: z.boolean().optional()
+    },
+    annotations: { readOnlyHint: true }
+  }, async input => {
+    try {
+      const data = await scanLeadOps(deps, input);
+      return okResult({ ok: true, data, warnings: data.warnings,
+        summary: `Lead ops scan: ${data.pagination.returned} de ${data.pagination.matchedTotal} candidato(s); cobertura ${data.coverage.status}.`,
+        source: { api: "local", stability: "observed", endpoint: "/customer/index + /deals + /conversions + /conversions/tracking" }
+      });
+    } catch (error) { return errorResult(error); }
+  });
+
   server.registerTool(
     "leads2b_find_records",
     {
@@ -38,6 +65,7 @@ export function registerLeadOpsTools(server: McpServer, deps: ReadDeps): void {
         limit: z.number().int().min(1).max(100).optional(),
         offset: z.number().int().min(0).optional(),
         fetchLimit: z.number().int().min(1).max(500).optional(),
+        maxPages: z.number().int().min(1).max(20).optional(),
         includeRaw: z.boolean().optional()
       },
       annotations: {
@@ -63,7 +91,8 @@ export function registerLeadOpsTools(server: McpServer, deps: ReadDeps): void {
           deps,
           criteria,
           requestedEntities,
-          fetchLimit: input.fetchLimit ?? 100
+          fetchLimit: input.fetchLimit ?? 100,
+          maxPages: input.maxPages
         });
         const data = findRecordsFromSources({
           criteria,
@@ -113,6 +142,7 @@ export function registerLeadOpsTools(server: McpServer, deps: ReadDeps): void {
         limit: z.number().int().min(1).max(100).optional(),
         offset: z.number().int().min(0).optional(),
         fetchLimit: z.number().int().min(1).max(500).optional(),
+        maxPages: z.number().int().min(1).max(20).optional(),
         includeRaw: z.boolean().optional()
       },
       annotations: {
@@ -122,10 +152,10 @@ export function registerLeadOpsTools(server: McpServer, deps: ReadDeps): void {
     async (input) => {
       try {
         const fetchLimit = input.fetchLimit ?? Math.max(input.limit ?? 25, 100);
-        const response = await deps.v2.listDeals({
+        const response = await deps.v2.scanDeals({
           entity: "OPPORTUNITY",
-          limit: fetchLimit,
-          offset: 0,
+          pageSize: fetchLimit,
+          maxPages: input.maxPages,
           search: input.search
         });
         const data = listRecentOpportunitiesFromDeals({
@@ -146,8 +176,8 @@ export function registerLeadOpsTools(server: McpServer, deps: ReadDeps): void {
 
         return okResult({
           ok: true,
-          data,
-          warnings: data.warnings,
+          data: { ...data, coverage: response.coverage },
+          warnings: [...data.warnings, ...response.warnings],
           summary: `Recent opportunities: ${data.matchedTotal} oportunidade(s) dentro da janela buscada.`,
           source: {
             api: "v2",
@@ -241,6 +271,7 @@ export function registerLeadOpsTools(server: McpServer, deps: ReadDeps): void {
         search: z.string().min(1).optional(),
         limit: z.number().int().min(1).max(100).optional(),
         fetchLimit: z.number().int().min(1).max(500).optional(),
+        maxPages: z.number().int().min(1).max(20).optional(),
         includeRaw: z.boolean().optional()
       },
       annotations: {
@@ -281,7 +312,8 @@ export function registerLeadOpsTools(server: McpServer, deps: ReadDeps): void {
             deps,
             criteria: search,
             requestedEntities,
-            fetchLimit
+            fetchLimit,
+            maxPages: input.maxPages
           });
           const found = findRecordsFromSources({
             criteria: search,
@@ -297,10 +329,10 @@ export function registerLeadOpsTools(server: McpServer, deps: ReadDeps): void {
         }
 
         if (input.includeRecentOpportunities || (records.length === 0 && !input.searches?.length)) {
-          const response = await deps.v2.listDeals({
+          const response = await deps.v2.scanDeals({
             entity: "OPPORTUNITY",
-            limit: fetchLimit,
-            offset: 0,
+            pageSize: fetchLimit,
+            maxPages: input.maxPages,
             search: input.search
           });
           const recent = listRecentOpportunitiesFromDeals({
@@ -319,7 +351,7 @@ export function registerLeadOpsTools(server: McpServer, deps: ReadDeps): void {
           });
 
           records.push(...recent.opportunities);
-          warnings.push(...recent.warnings);
+          warnings.push(...recent.warnings, ...response.warnings);
         }
 
         const uniqueRecords = dedupeRecords(records).slice(0, limit);
@@ -359,6 +391,7 @@ async function loadRecordSources(input: {
   criteria: ReturnType<typeof pickSearchCriteria>;
   requestedEntities: LeadOpsEntity[];
   fetchLimit: number;
+  maxPages?: number;
 }): Promise<{
   customersResponse?: unknown;
   dealResponses: Array<{ entity: "LEAD" | "OPPORTUNITY"; response: unknown }>;
@@ -382,13 +415,14 @@ async function loadRecordSources(input: {
     }
 
     try {
-      const response = await input.deps.v2.listDeals({
+      const response = await input.deps.v2.scanDeals({
         entity,
-        limit: input.fetchLimit,
-        offset: 0,
+        pageSize: input.fetchLimit,
+        maxPages: input.maxPages,
         search: firstCriteriaValue(input.criteria)
       });
       dealResponses.push({ entity, response });
+      warnings.push(...response.warnings);
     } catch (error) {
       warnings.push(`Falha ao buscar ${entity} em /deals: ${errorMessage(error)}`);
     }
@@ -416,58 +450,18 @@ async function getRecordDetail(input: {
     });
   }
 
-  if (input.entity === "LEAD") {
-    const response = await input.deps.v1.getDefaultLead({ id: input.id });
-    return {
-      ...recordDetailFromRaw({
-        entityType: "LEAD",
-        raw: unwrapData(response),
-        includeRaw: input.includeRaw
-      }),
-      sourceEndpoint: "/lead/index/{id}/defaultLead"
-    };
+  const response = input.entity === "LEAD" ? await input.deps.v1.getDefaultLead({ id: input.id })
+    : input.entity === "OPPORTUNITY" ? await input.deps.v1.getOpportunity({ id: input.id })
+    : await input.deps.v1.getContact({ id: input.id });
+  const envelope = response as { data?: { lead?: unknown }; opportunity_data?: unknown[] };
+  const raw = input.entity === "LEAD" ? envelope?.data?.lead
+    : input.entity === "OPPORTUNITY" ? envelope?.opportunity_data?.[0] : envelope?.data;
+  if (!raw || typeof raw !== "object" || !("id" in raw) || String(raw.id) !== String(input.id)) {
+    throw new Error("Detalhe ausente ou formato inesperado; o registro não foi confirmado.");
   }
-
-  if (input.entity === "OPPORTUNITY") {
-    const response = await input.deps.v2.listDeals({
-      entity: "OPPORTUNITY",
-      limit: 500,
-      offset: 0,
-      search: String(input.id)
-    });
-    const found = extractArrayData(response).find((item) => String(item.id ?? "") === String(input.id));
-
-    if (found) {
-      return recordDetailFromRaw({
-        entityType: "OPPORTUNITY",
-        raw: found,
-        includeRaw: input.includeRaw
-      });
-    }
-
-    return {
-      technicalId: `OPPORTUNITY:${input.id}`,
-      entityType: "OPPORTUNITY",
-      leads2bId: String(input.id),
-      sourceEndpoint: "/deals?entity=OPPORTUNITY",
-      basic: {},
-      commercial: {},
-      dates: {},
-      warnings: [
-        "Endpoint direto de detalhe de OPPORTUNITY não foi confirmado; registro não encontrado na janela de /deals."
-      ]
-    };
-  }
-
   return {
-    technicalId: `CONTACT:${input.id}`,
-    entityType: "CONTACT",
-    leads2bId: String(input.id),
-    sourceEndpoint: "unknown",
-    basic: {},
-    commercial: {},
-    dates: {},
-    warnings: ["Endpoint direto de detalhe de CONTACT ainda não foi confirmado."]
+    ...recordDetailFromRaw({ entityType: input.entity, raw, includeRaw: input.includeRaw }),
+    sourceEndpoint: sourceForRecordDetail(input.entity).endpoint ?? "unknown"
   };
 }
 
@@ -528,58 +522,6 @@ async function getAttributionForRecord(input: {
   };
 }
 
-async function loadAttributionForRecords(
-  deps: ReadDeps,
-  records: LeadOpsRecord[]
-): Promise<Parameters<typeof buildLeadOpsCandidates>[0]["attributionByTechnicalId"]> {
-  const attributionByTechnicalId: NonNullable<
-    Parameters<typeof buildLeadOpsCandidates>[0]["attributionByTechnicalId"]
-  > = {};
-
-  for (const record of records) {
-    if (record.entityType === "CUSTOMER" || !record.leads2bId) {
-      continue;
-    }
-
-    const batch = await diagnoseAttributionBatch({
-      records: [
-        {
-          id: record.leads2bId,
-          entity: record.entityType as Leads2bEntity
-        }
-      ],
-      ignoreLookupError: isEmptyAttributionLookupError,
-      getEvents: async ({ id, entity }) => {
-        const [conversionsResponse, trackingResponse] = await Promise.all([
-          deps.v2.getConversions({ id, entity }),
-          deps.v2.getTracking({ id, entity })
-        ]);
-
-        return {
-          conversions: extractEvents(conversionsResponse),
-          tracking: extractEvents(trackingResponse)
-        };
-      }
-    });
-    const result = batch.results[0];
-
-    if (!result?.ok) {
-      attributionByTechnicalId[record.technicalId] = {
-        warnings: result ? [result.error] : ["Nenhum resultado de atribuição foi gerado."]
-      };
-      continue;
-    }
-
-    attributionByTechnicalId[record.technicalId] = {
-      firstTouchObserved: result.attribution.firstTouchObserved,
-      lastTouchObserved: result.attribution.lastTouchObserved,
-      lastConversion: result.attribution.conversions.at(-1),
-      warnings: result.warnings
-    };
-  }
-
-  return attributionByTechnicalId;
-}
 
 function sourceForRecordDetail(entity: LeadOpsEntity): {
   api: "v1" | "v2" | "snippet" | "local";
@@ -595,10 +537,10 @@ function sourceForRecordDetail(entity: LeadOpsEntity): {
   }
 
   if (entity === "OPPORTUNITY") {
-    return { api: "v2", endpoint: "/deals?entity=OPPORTUNITY", stability: "observed" };
+    return { api: "v1", endpoint: "/opportunity/index/{id}", stability: "observed" };
   }
 
-  return { api: "local", stability: "unknown" };
+  return { api: "v1", endpoint: "/customer/contact_by_id/{id}", stability: "observed" };
 }
 
 function pickSearchCriteria(input: Record<string, unknown>): {

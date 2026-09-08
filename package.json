@@ -1,6 +1,6 @@
 {
   "name": "leads2b-mcp",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Unofficial community MCP server for Leads2b diagnostics and opt-in CRUD operations.",
   "type": "module",
   "license": "MIT",
@@ -34,7 +34,9 @@
     "test:live-smoke": "vitest run tests/mcp-live-smoke.test.ts",
     "test:mcp": "vitest run tests/mcp-stdio.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "prepack": "npm run build"
+    "prepack": "npm run build",
+    "package:mcpb": "npm run build && node scripts/package-mcpb.mjs",
+    "verify:mcpb": "node scripts/verify-mcpb.mjs"
   },
   "keywords": [
     "mcp",
@@ -48,12 +50,25 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@anthropic-ai/mcpb": "2.1.2",
     "@types/node": "^24.10.1",
+    "fflate": "^0.8.3",
     "tsx": "^4.22.3",
     "typescript": "^6.0.3",
     "vitest": "^4.1.7"
   },
   "engines": {
-    "node": ">=20.10"
+    "node": ">=22"
+  },
+  "overrides": {
+    "tmp": "^0.2.7"
+  },
+  "exports": {
+    "./lead-ops": {
+      "types": "./dist/lead-ops/index.d.ts",
+      "import": "./dist/lead-ops/index.js"
+    },
+    "./dist/*": "./dist/*",
+    "./package.json": "./package.json"
   }
 }

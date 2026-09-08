@@ -10,3 +10,7 @@ coverage/
 credentials/
 credenciais/
 .internal/
+
+research/
+.worktrees/
+artifacts/

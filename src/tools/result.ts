@@ -59,7 +59,7 @@ export function toToolError(error: unknown): ToolErrorPayload {
       ok: false,
       error: {
         status: error.status,
-        code: "LEADS2B_HTTP_ERROR",
+        code: error.code,
         message: error.message,
         endpoint: error.endpoint,
         details: error.details

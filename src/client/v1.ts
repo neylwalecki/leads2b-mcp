@@ -58,6 +58,14 @@ export class Leads2bV1Client {
     return this.http.get("/user/users_by_access_level");
   }
 
+  listTeamUsers(): Promise<unknown> {
+    return this.http.get("/user/all");
+  }
+
+  listPipelineStages(input: { pipelineId: string | number }): Promise<unknown> {
+    return this.http.get(`/pipeline/pipeline_items/${input.pipelineId}`);
+  }
+
   listOrigins(): Promise<unknown> {
     return this.http.get("/origin/index/");
   }
@@ -145,6 +153,22 @@ export class Leads2bV1Client {
 
   listCustomers(): Promise<unknown> {
     return this.http.get("/customer/index");
+  }
+
+  getCustomer(input: { id: string | number }): Promise<unknown> {
+    return this.http.get(`/customer/index/${input.id}`);
+  }
+
+  listContacts(input: { customerId: string | number }): Promise<unknown> {
+    return this.http.get(`/customer/contact/${input.customerId}`);
+  }
+
+  getContact(input: { id: string | number }): Promise<unknown> {
+    return this.http.get(`/customer/contact_by_id/${input.id}`);
+  }
+
+  getOpportunity(input: { id: string | number }): Promise<unknown> {
+    return this.http.get(`/opportunity/index/${input.id}`);
   }
 
   getDefaultLead(input: { id: string | number }): Promise<unknown> {

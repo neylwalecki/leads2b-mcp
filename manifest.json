@@ -1,0 +1,69 @@
+{
+  "manifest_version": "0.3",
+  "name": "leads2b-mcp",
+  "display_name": "Leads2b MCP (Community)",
+  "version": "0.3.0",
+  "description": "Consultas, atribuição e CRUD opt-in na Leads2b. Projeto independente, não afiliado à Leads2b.",
+  "author": {
+    "name": "Neyl Walecki",
+    "url": "https://github.com/neylwalecki"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/neylwalecki/leads2b-mcp"
+  },
+  "license": "MIT",
+  "server": {
+    "type": "node",
+    "entry_point": "dist/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/dist/index.js"
+      ],
+      "env": {
+        "LEADS2B_API_V1_TOKEN": "${user_config.token_v1}",
+        "LEADS2B_API_V2_TOKEN": "${user_config.token_v2}",
+        "LEADS2B_API_V1_BASE_URL": "https://app.leads2b.com/api/v1",
+        "LEADS2B_API_V2_BASE_URL": "https://app.leads2b.com/api/v2",
+        "LEADS2B_PUBLIC_WORKER_URL": "https://js.app.leads2b.com",
+        "LEADS2B_WRITE_MODE": "${user_config.write_mode}",
+        "LEADS2B_ENABLE_RAW_API": "false",
+        "DOTENV_CONFIG_PATH": "${__dirname}/.env.disabled"
+      }
+    }
+  },
+  "tools_generated": true,
+  "compatibility": {
+    "platforms": [
+      "darwin",
+      "win32"
+    ],
+    "runtimes": {
+      "node": ">=22"
+    }
+  },
+  "user_config": {
+    "token_v1": {
+      "type": "string",
+      "title": "Token API v1",
+      "description": "Token da API interna v1 da conta. CRUD de leads/oportunidades exige contexto de usuário, verificado pelo health check; chave de empresa pode ter cobertura menor.",
+      "required": true,
+      "sensitive": true
+    },
+    "token_v2": {
+      "type": "string",
+      "title": "Token API v2",
+      "description": "Token autorizado para a API interna v2 da sua conta Leads2b. Renove quando expirar.",
+      "required": true,
+      "sensitive": true
+    },
+    "write_mode": {
+      "type": "string",
+      "title": "Modo de escrita",
+      "description": "disabled: somente leitura; preview: planos sem alteração; live: criação/edição real e exclusão com confirmação. Use exatamente um desses valores.",
+      "default": "disabled",
+      "required": true
+    }
+  }
+}

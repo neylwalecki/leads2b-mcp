@@ -1,6 +1,8 @@
 # Endpoints
 
-Resumo dos endpoints usados ou observados pelo MCP.
+Resumo dos endpoints usados ou observados pelo MCP. Revisão: 2026-09-08.
+
+Os status legados abaixo são registros de probes do projeto, não garantia permanente de disponibilidade. HTTP 200 e lista vazia não comprovam contexto de usuário nem escopo completo. A validação de escrita tem seu próprio quadro ao final.
 
 Status:
 
@@ -62,13 +64,11 @@ Base: `https://app.leads2b.com/api/v2`
 
 | Endpoint | Método | Status | Uso |
 |---|---:|---|---|
-| `/users` | GET | Confirmado | Usuários da conta. |
+| `/users` | GET | Confirmado | Resposta v2 de usuários; não equivale ao cadastro da equipe v1. |
 | `/webhooks` | GET | Confirmado | Webhooks. |
 | `/customer` | GET | Confirmado | Lista/busca de customers. |
 | `/customer` | OPTIONS | Observado | Endpoint responde a probe não mutante. |
-| `/customer` | POST | Experimental | Criação de customer via `leads2b_create_customer`. |
 | `/customer/{id}` | GET | Confirmado | Detalhe de customer. |
-| `/customer/{id}` | PATCH | Experimental | Atualização de customer. |
 | `/customer/{id}` | OPTIONS | Observado | IDs inválidos podem retornar validação, mas o endpoint existe. |
 | `/deals?entity=OPPORTUNITY` | GET | Observado | Lista oportunidades/deals. Usado por `leads2b_list_recent_opportunities`. |
 | `/deals?entity=LEAD` | GET | Observado | Lista leads/deals quando a conta expõe essa entidade. |
@@ -95,17 +95,44 @@ Base: `https://app.leads2b.com/api/v2`
 
 Referência pública observada para criação externa de lead: [Central de Ajuda Leads2b - Integração com WordPress](https://ajuda.leads2b.com/pt-BR/articles/7036518-como-realizar-a-integracao-com-wordpress).
 
-## CRUD Investigado
+## CRUD e evidência de execução
 
-| Área | Leitura confiável | Escrita exposta | Observações |
-|---|---|---|---|
-| Customers | `GET /customer`, `GET /customer/{id}`, `GET /customer/index` | `POST /customer`, `PATCH /customer/{id}` | Create/update seguem como experimentais. |
-| Oportunidades/deals | `GET /deals?entity=OPPORTUNITY`, `GET /deal/count_deals`, conversões/tracking por `OPPORTUNITY` | Não exposta | Listagem é observada; detalhe direto por ID ainda não foi confirmado. |
-| Leads | `GET /lead/index/{id}/defaultLead`, `GET /deals?entity=LEAD` | Não exposta como CRUD normal | `POST /external_resources/create_lead` existe como integração externa, mas precisa contrato próprio. |
-| Contatos | Conversões/tracking por `CONTACT` | Não exposta | Endpoints diretos de contato ainda não confiáveis. |
-| Atividades | `GET /mail/calendars/events`, `GET /action/list/` | Não exposta | `schedule` ainda não virou contrato confiável. |
+Rotas identificadas no [aplicativo público da Leads2b](https://app.leads2b.com/) e no bundle `common-xtdBsm3x.js`, observado em 2026-09-08. A existência no frontend não substitui validação com o tipo de token utilizado pelo MCP.
 
-`leads2b_api_request` permite investigar endpoints v1/v2 atrás de `LEADS2B_ENABLE_RAW_API=true`, mas não muda o status público dos contratos.
+| Entidade | Criar | Ler | Editar | Excluir |
+|---|---|---|---|---|
+| Customer | `POST /customer/index` | `GET /customer/index/{id}` | `PUT /customer/index/{id}` | `DELETE /customer/index/{id}` |
+| Contato | `POST /customer/contact` | `GET /customer/contact_by_id/{id}` | `PUT /customer/contact/{id}` | `DELETE /customer/contact/{id}` |
+| Lead | `POST /lead` | `GET /lead/index/{id}/defaultLead` | `PUT /deal/index` | `DELETE /lead/index/{id}` |
+| Oportunidade | `POST /opportunity/index/` | `GET /opportunity/index/{id}` | `PUT /deal/index` | `DELETE /opportunity/index/{id}` |
+
+Listagens complementares: `GET /customer/contact/{customerId}`, `GET /user/all` e `GET /pipeline/pipeline_items/{pipelineId}`. Para editar negócio, o corpo é `{deal: {id, type: "LEAD" | "OPPORTUNITY"}, edit_data: fields}`.
+
+### Teste controlado em 2026-09-08
+
+Foram criados registros temporários, alterados campos básicos e conferidas as releituras. Todos os registros criados no teste foram excluídos e a exclusão foi relida. O cadastro preexistente usado como controle foi preservado. Dados e recibos reais ficam fora do repositório público.
+
+| Operação | Evidência e limite |
+|---|---|
+| Customer (`PERSON`) | Criação, leitura, edição de nome e exclusão confirmadas. `ORGANIZATION` usa o mesmo endpoint, com schema próprio; não houve teste real desse tipo. |
+| Contato | Criação com vínculo a customer, leitura, edição de nome sem perder e-mail e exclusão confirmadas. |
+| Lead | Criação com token de usuário, leitura, edição de título/e-mail e exclusão confirmadas. O campo de criação é `email_contact`; tentativa duplicada foi rejeitada com `email_already_used`. |
+| Oportunidade | Criação, leitura e exclusão confirmadas. Edição de título persistiu, mas a API retornou HTTP 500; uma resposta de erro não comprova rollback. |
+| Token de empresa | Não retornou usuário em `/user/logged/`; criação de negócios falhou com HTTP 500. O mesmo cadastro foi acessível com token de usuário autorizado, que permitiu criar os negócios. |
+
+A 0.3.0 verifica contexto de usuário antes do CRUD de negócios. Após erro de escrita com ID conhecido, tenta uma releitura e expõe o resultado sem declarar sucesso da chamada. Não faz retry de mutações.
+
+`PUT /lead/edit_lead/{id}` foi observado no frontend, mas não persistiu o título no teste. `PUT /opportunity/edit_opportunity/{id}` retornou erro. Por isso, os tools usam o contrato observado de `PUT /deal/index` para edição. As rotas presumidas de escrita v2 da versão anterior foram removidas.
+
+### Datas observadas
+
+Comparando horário de envio do teste com a resposta, a v1 devolveu horário UTC-03 sem offset. O detalhe de customer v2 devolveu o mesmo horário com `Z`, três horas antes do instante real quando interpretado literalmente. É uma inconsistência do fornecedor, não do fuso do Windows. Datas brutas são preservadas; a coleta permite correção explícita de interpretação com `apiTimestampOffset` após validação da conta. Isso não prova a mesma semântica em conversões/tracking ou em todo endpoint v2.
+
+### API pública separada
+
+A [referência OpenAPI](https://developers.leads2b.dev/api/openapi) consultada lista pedidos, itens, endereços e imagem de produto na base `https://api.leads2b.com/v2`. Não é a base interna usada por este MCP e não prova ausência de CRUD de leads/contatos no produto. A [paginação geral](https://developers.leads2b.dev/api/pagination) não deve ser aplicada indiscriminadamente a endpoints internos.
+
+`GET /deals` foi validado com `limit/offset` em páginas distintas. O parâmetro `search` foi ignorado no teste; o MCP aplica critérios locais sobre os registros coletados. A coleta detecta limites, páginas repetidas e mudanças de totais. Mesmo completa para a janela solicitada, não é snapshot atômico.
 
 ## Snippet Público
 

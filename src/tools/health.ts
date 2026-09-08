@@ -18,10 +18,13 @@ type ApiHealth = {
   responded: boolean;
   ok: boolean;
   status?: number;
+  userContext?: boolean;
   message?: string;
 };
 
 const V1_TOOLS = [
+  "leads2b_list_team_users", "leads2b_list_pipeline_stages",
+  "leads2b_get_customer_v1", "leads2b_get_contact", "leads2b_list_contacts", "leads2b_get_opportunity",
   "leads2b_get_logged_user",
   "leads2b_list_origins",
   "leads2b_list_pipelines",
@@ -70,6 +73,7 @@ const CROSS_API_TOOLS = [
   "leads2b_diagnose_customer_attribution",
   "leads2b_diagnose_records_attribution",
   "leads2b_find_records",
+  "leads2b_scan_lead_ops",
   "leads2b_get_record_detail",
   "leads2b_get_lead_ops_candidates"
 ];
@@ -89,19 +93,22 @@ export function registerHealthTool(server: McpServer, deps: HealthDeps): void {
     },
     async ({ includeSnippet = false }) => {
       const [v1Health, v2Health, snippetHealth] = await Promise.all([
-        checkApi(deps.v1.hasToken(), () => deps.v1.getLoggedUser()),
+        checkApi(deps.v1.hasToken(), () => deps.v1.getLoggedUser(), true),
         checkApi(deps.v2.hasToken(), () => deps.v2.listUsers()),
         includeSnippet ? checkSnippet(deps.config.publicWorkerUrl) : Promise.resolve(undefined)
       ]);
+      const availableWrites = deps.config.writeMode !== "disabled" && v1Health.ok
+        ? WRITE_TOOL_NAMES.filter(name => v1Health.userContext || /_(customer|contact)$/.test(name)) : [];
       const availableTools = [
         ...LOCAL_TOOLS,
         ...(v1Health.ok ? V1_TOOLS : []),
         ...(v2Health.ok ? V2_TOOLS : []),
         ...(v1Health.ok && v2Health.ok ? CROSS_API_TOOLS : []),
-        ...(deps.config.writeMode !== "disabled" && v2Health.ok ? WRITE_TOOL_NAMES : []),
+        ...availableWrites,
         ...(deps.config.rawApiEnabled ? [RAW_API_TOOL_NAME] : [])
       ];
       const warnings: string[] = [];
+      if (v1Health.ok && !v1Health.userContext) warnings.push("API v1 respondeu sem contexto de usuário; CRUD de leads/oportunidades exige token v1 de usuário autorizado.");
 
       if (!deps.config.apiV1Token) {
         warnings.push("LEADS2B_API_V1_TOKEN não configurado; ferramentas v1 ficam indisponíveis.");
@@ -117,6 +124,7 @@ export function registerHealthTool(server: McpServer, deps: HealthDeps): void {
           tokens: {
             v1Configured: Boolean(deps.config.apiV1Token),
             v2Configured: Boolean(deps.config.apiV2Token),
+            v1ExpiresAt: getJwtExpiration(deps.config.apiV1Token),
             v2ExpiresAt: getJwtExpiration(deps.config.apiV2Token)
           },
           apis: {
@@ -132,12 +140,14 @@ export function registerHealthTool(server: McpServer, deps: HealthDeps): void {
           writeTools: {
             mode: deps.config.writeMode,
             registered: deps.config.writeMode !== "disabled",
-            availableTools: deps.config.writeMode !== "disabled" ? WRITE_TOOL_NAMES : []
+            availableTools: availableWrites,
+            registeredTools: deps.config.writeMode !== "disabled" ? WRITE_TOOL_NAMES : []
           },
           rawApi: {
             enabled: deps.config.rawApiEnabled,
             availableTool: deps.config.rawApiEnabled ? RAW_API_TOOL_NAME : undefined
           },
+          availabilityBasis: "Inferida por autenticação de cada API; não comprova permissão em cada endpoint nem sucesso de escrita.",
           availableTools
         },
         warnings,
@@ -151,7 +161,7 @@ export function registerHealthTool(server: McpServer, deps: HealthDeps): void {
   );
 }
 
-async function checkApi(configured: boolean, request: () => Promise<unknown>): Promise<ApiHealth> {
+async function checkApi(configured: boolean, request: () => Promise<unknown>, inspectUser = false): Promise<ApiHealth> {
   if (!configured) {
     return {
       configured: false,
@@ -162,10 +172,13 @@ async function checkApi(configured: boolean, request: () => Promise<unknown>): P
   }
 
   try {
-    await request();
+    const response = await request() as { data?: { user?: unknown } };
+    const rawUser = response?.data?.user;
+    const user = Array.isArray(rawUser) ? rawUser[0] : rawUser;
     return {
       configured: true,
       responded: true,
+      ...(inspectUser ? { userContext: Boolean(user && typeof user === "object" && "id" in user && user.id) } : {}),
       ok: true
     };
   } catch (error) {
@@ -183,7 +196,7 @@ async function checkApi(configured: boolean, request: () => Promise<unknown>): P
 async function checkSnippet(publicWorkerUrl: string): Promise<ApiHealth> {
   try {
     const response = await fetch(`${publicWorkerUrl.replace(/\/$/, "")}/latest`, {
-      method: "GET"
+      method: "GET", signal: AbortSignal.timeout(30000)
     });
 
     return {

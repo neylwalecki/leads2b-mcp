@@ -1,6 +1,6 @@
 # Ferramentas MCP
 
-Lista resumida das ferramentas disponíveis no servidor.
+Contrato do candidato 0.3.0. A lista abaixo distingue ferramenta implementada, permissão da conta e cobertura dos dados.
 
 ## Retorno Padrão
 
@@ -31,7 +31,9 @@ type ToolResult<T> = {
 | Ferramenta | API | Endpoint |
 |---|---|---|
 | `leads2b_get_logged_user` | v1 | `/user/logged/` |
-| `leads2b_list_users` | v2 | `/users` |
+| `leads2b_list_users` | v2 | `/users` (não usar como cadastro de responsáveis sem conferir o escopo) |
+| `leads2b_list_team_users` | v1 | `/user/all` (equipe interna) |
+| `leads2b_list_pipeline_stages` | v1 | `/pipeline/pipeline_items/{pipelineId}` |
 | `leads2b_list_users_by_access_level` | v1 | `/user/users_by_access_level` |
 | `leads2b_list_origins` | v1 | `/origin/index/` |
 | `leads2b_list_pipelines` | v1 | `/pipeline/active` |
@@ -64,6 +66,10 @@ type ToolResult<T> = {
 | `leads2b_find_customer` | v1/local | Filtra localmente por e-mail, telefone, documento, nome ou texto. |
 | `leads2b_search_customers` | v2 | Busca server-side em `/customer?search={search}`. |
 | `leads2b_get_customer` | v2 | Consulta `/customer/{id}`. |
+| `leads2b_get_customer_v1` | v1 | Consulta `/customer/index/{id}`. |
+| `leads2b_list_contacts` | v1 | Contatos vinculados a `customerId`. |
+| `leads2b_get_contact` | v1 | Detalhe integral por ID. |
+| `leads2b_get_opportunity` | v1 | Detalhe integral por ID, sem depender da janela de uma listagem. |
 | `leads2b_get_lead_detail` | v1 | Consulta `/lead/index/{id}/defaultLead`. |
 
 ## Operação Comercial de Leads
@@ -72,6 +78,7 @@ Ferramentas genéricas, agnósticas por cliente, para automações que alimentam
 
 | Ferramenta | API | Observação |
 |---|---|---|
+| `leads2b_scan_lead_ops` | v1/v2/local | Coleta paginada com `coverage`, `pagination` e candidatos sem excluir registros sem tracking. |
 | `leads2b_find_records` | v1/v2/local | Busca por e-mail, telefone, documento, nome, empresa ou texto em customers e deals disponíveis. |
 | `leads2b_list_recent_opportunities` | v2/local | Lista `/deals?entity=OPPORTUNITY` e aplica filtros locais por data, status, funil, etapa, responsável e texto. |
 | `leads2b_get_record_detail` | v1/v2/local | Retorna detalhe normalizado de `CUSTOMER`, `LEAD`, `CONTACT` ou `OPPORTUNITY`; inclui atribuição quando disponível. |
@@ -111,8 +118,8 @@ type LeadOpsCandidate = {
 
 Observações:
 
-- `CONTACT` ainda não tem endpoint direto confiável; ferramentas retornam warning quando a cobertura for parcial.
-- Filtros de oportunidade são locais sobre a janela buscada por `fetchLimit`.
+- Contatos possuem detalhe direto e listagem por customer; a busca global de contatos ainda não foi implementada.
+- Filtros de oportunidade são locais sobre a janela buscada por `fetchLimit` e `maxPages`. O parâmetro remoto `search` foi ignorado pela API nos testes; confirme os filtros locais.
 - `Origem`/`origin_name` é tratada como origem operacional/cadastral. Atribuição de marketing vem de conversões/tracking, UTMs, click IDs, host e referrer.
 
 ## Atribuição
@@ -137,50 +144,51 @@ Observações:
 | `leads2b_get_snippet_config` | v2 | `/integrations/config/token` |
 | `leads2b_get_snippet_script` | v2 | `/integrations/config/script` |
 
+## Coleta para automações
+
+`leads2b_scan_lead_ops` recebe `entities`, `createdFrom`, `createdTo`, `pageSize` (1–500), `maxPages` (1–20; padrão 5), `limit` (1–500; padrão 100), `offset` e `includeAttribution`.
+
+- `coverage.sources`: limite de páginas, falhas, repetição de páginas, mudanças na coleção e totais observados. Customers v1 não comprovam completude e ficam como `unknown`.
+- `pagination`: janela da saída, `matchedTotal`, `returned` e `nextOffset`. Paginar a saída refaz a coleta; não é snapshot atômico.
+- `createdFrom`/`createdTo`: timestamps ISO respeitam o fuso explícito. Timestamp da API sem fuso é interpretado como UTC-03, observado em testes controlados, independentemente do computador. Data isolada usa início/fim do dia UTC; para um dia local, informe ambos os limites com o offset desejado.
+- A v2 também foi observada rotulando horário local com `Z`. O padrão respeita offsets explícitos recebidos; quando a conta comprovar essa rotulagem incorreta, `apiTimestampOffset="-03:00"` corrige a interpretação no filtro sem modificar dados brutos. A opção não altera eventos de atribuição.
+- Atribuição ausente não elimina o candidato. Erro de uma fonte produz cobertura parcial, não a conclusão “nenhum lead”.
+
 ## Escrita
 
-Ferramentas de escrita são registradas conforme:
+`disabled` não registra ferramentas; `preview` retorna plano; `live` envia a operação. Exclusão requer `confirm_destructive=true`. Todas as ferramentas abaixo usam a API interna v1 e schemas explícitos, sem aceitar campos desconhecidos fora de `parameters` e `custom_fields`.
 
-```txt
-LEADS2B_WRITE_MODE=disabled
-LEADS2B_WRITE_MODE=preview
-LEADS2B_WRITE_MODE=live
-```
+| Entidade | Criar | Editar | Excluir |
+|---|---|---|---|
+| Empresa/pessoa | `leads2b_create_customer` | `leads2b_update_customer` | `leads2b_delete_customer` |
+| Contato | `leads2b_create_contact` | `leads2b_update_contact` | `leads2b_delete_contact` |
+| Lead | `leads2b_create_lead` | `leads2b_update_lead` | `leads2b_delete_lead` |
+| Oportunidade | `leads2b_create_opportunity` | `leads2b_update_opportunity` | `leads2b_delete_opportunity` |
 
-| Ferramenta | API | Status |
-|---|---|---|
-| `leads2b_create_customer` | v2 | Experimental |
-| `leads2b_update_customer` | v2 | Experimental |
+Entrada de criação: `{fields: {...}}`. Edição: `{id, fields: {...}}`. Exclusão: `{id, confirm_destructive: true}`. IDs devem ser inteiros positivos ou strings numéricas positivas.
 
-`disabled` não registra ferramentas de escrita. `preview` retorna plano sem alteração real. `live` executa creates e updates simples diretamente.
+| Criação | Campos obrigatórios |
+|---|---|
+| Customer | `name`, `type` (`PERSON` ou `ORGANIZATION`) |
+| Contato | `name`, `id_customer` |
+| Lead/oportunidade | `name_contact`, `id_pipeline`, `id_pipeline_item`, `id_user` |
 
-```ts
-type CreateCustomerInput = {
-  fields: Record<string, unknown>;
-};
+A conta pode exigir campos customizados adicionais. Consulte equipe, pipelines, etapas e colunas antes de criar. Não invente IDs. O esquema completo aparece em `tools/list` e em `src/crud/schemas.ts`.
 
-type UpdateCustomerInput = {
-  id: string | number;
-  fields: Record<string, unknown>;
-};
-```
+Em leads, `email`/`phone` são copiados para `email_contact`/`phone_contact` quando estes não forem fornecidos, pois a criação usa os campos de contato. Para nome do negócio, use `parameters.deal_name` em lead ou `parameters.op_name` em oportunidade. Na edição de lead, `name` refere-se ao contato; na oportunidade, use `description` para notas. O envio de objetos deve preservar chaves existentes quando a intenção for alterar somente uma delas.
+
+A edição de leads/oportunidades usa `PUT /deal/index` com `{deal: {id, type}, edit_data: fields}`. As antigas rotas de edição não persistiram todos os campos nos testes. Criações/edições de customers v2 presumidas na 0.2.0 foram substituídas pelas rotas v1 observadas.
+
+CRUD de negócios exige token v1 com contexto de usuário; uma chave de empresa pode consultar dados e editar customers sem atender a esse requisito. A verificação ocorre antes da mutação em `live` e não troca credenciais automaticamente.
+
+Em sucesso, `data.result` preserva a resposta da API e `readback.status=not_performed`: releia o registro para confirmar persistência. Em erro após envio, `writeState.outcome=unknown`; havendo ID conhecido, o MCP tenta uma releitura e informa `requestedFieldsMatch`. Isso não converte uma resposta HTTP 500 em sucesso da chamada. Falha na criação sem ID requer busca antes de uma nova tentativa. Não há retry de escrita.
 
 ## Raw API
 
-Registrada somente com:
+`leads2b_api_request` exige `LEADS2B_ENABLE_RAW_API=true`. Aceita `api` (`v1`/`v2`), `method`, `path`, `query`, `body` e `confirm_destructive`.
 
-```txt
-LEADS2B_ENABLE_RAW_API=true
-```
+GET/OPTIONS executam diretamente. Métodos mutantes respeitam write-mode. Exclusões, bulk, merge, ganho/perda e conversões reconhecidos pelo caminho exigem confirmação extra. A classificação por caminho é uma proteção limitada, não um analisador universal da semântica de endpoints desconhecidos.
 
-| Ferramenta | API | Status |
-|---|---|---|
-| `leads2b_api_request` | v1/v2 | Avançada |
+## Fora da cobertura específica
 
-`GET` e `OPTIONS` executam direto. Métodos mutantes respeitam `LEADS2B_WRITE_MODE`; delete, bulk e merge exigem `confirm_destructive=true`.
-
-## Próximas Versões
-
-- Consolidar filtros server-side confiáveis para `/deals`.
-- Encontrar endpoint direto confiável para contatos.
-- Adicionar ferramentas específicas para deletes apenas com confirmação explícita e plano de recuperação.
+Atividades mutantes, importações em massa, merges, ganhos/perdas, pedidos, produtos e conversões artificiais não possuem ferramentas específicas nesta versão. A ausência no MCP não significa ausência na Leads2b. A API pública tem contratos próprios, separados das APIs internas.

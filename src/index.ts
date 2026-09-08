@@ -30,7 +30,7 @@ const v2 = new Leads2bV2Client(
 
 const server = new McpServer({
   name: "leads2b-mcp",
-  version: "0.2.0"
+  version: "0.3.0"
 });
 
 registerHealthTool(server, { config, v1, v2 });
@@ -38,7 +38,7 @@ registerReadTools(server, { v1, v2 });
 registerAttributionTools(server, { v1, v2 });
 
 if (config.writeMode !== "disabled") {
-  registerWriteTools(server, { v2, writeMode: config.writeMode });
+  registerWriteTools(server, { v1, writeMode: config.writeMode });
 }
 
 if (config.rawApiEnabled) {

@@ -74,3 +74,8 @@ describe("isDestructiveOperation", () => {
     expect(isDestructiveOperation("PATCH", "/customer/123")).toBe(false);
   });
 });
+
+it("requires destructive confirmation for artificial conversion and loss actions", () => {
+  for (const path of ["/opportunity/winOpportunity/123", "/opportunity/opportunityLost", "/lead/lose/123/LEAD/1", "/lead/convert/123", "/customer/bulk_update"])
+    expect(isDestructiveOperation("POST", path)).toBe(true);
+});

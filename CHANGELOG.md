@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.3.0 (candidata, não publicada)
+
+- Pacote `.mcpb` com tokens sensíveis, leitura por padrão e dependências de produção; instruções de Claude Desktop e PowerShell.
+- Node >=22, lockfile atualizado e matriz CI Linux/Windows com Node 22/24. Override de `tmp` para versão corrigida usada pelo empacotador de desenvolvimento.
+- HTTP com timeout, cancelamento e retries limitados somente de leitura; mutações nunca são repetidas automaticamente.
+- Coleta `/deals` com paginação e cobertura explícita, interpretação explícita de fuso e limite final ISO respeitado.
+- Entrada pública `leads2b-mcp/lead-ops`, tipos e `leads2b_scan_lead_ops`, preservando registros sem tracking.
+- CRUD básico de customers, contatos, leads e oportunidades com schemas, preview e confirmação de exclusão.
+- Autenticação com contexto de usuário para negócios; erro de escrita acompanhado de releitura quando há ID conhecido.
+- Detalhes diretos de contato/oportunidade, equipe interna e etapas de pipeline; correção de envelopes de lead, parâmetros JSON e valores decimais da API.
+- Documentação consolidada e exclusão de pesquisa privada do Git/pacote.
+
+### Migração
+
+Customer create/update agora usa a API v1 observada. Criação exige `fields.type` (`PERSON` ou `ORGANIZATION`); campos arbitrários de escrita não são mais aceitos. Métodos experimentais `Leads2bV2Client.createCustomer/updateCustomer` foram removidos. Caminhos legados de leitura em `dist/*` continuam disponíveis; a migração de automações instaladas é manual.
+
+Tokens v1 de empresa podem continuar válidos para leitura/customers sem permitir CRUD de negócios. Configure token v1 com contexto de usuário somente no ambiente que for operar esses negócios. Windows e release permanecem sujeitos a homologação/publicação separadas.
+
+
 ## 0.2.0
 
 - Replaced per-call dry-run write gating with `LEADS2B_WRITE_MODE=disabled|preview|live`.

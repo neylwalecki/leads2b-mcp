@@ -1,3 +1,4 @@
+import { parseApiDate, dateBoundary } from "./dates.js";
 import { extractCustomers } from "../customers/list.js";
 
 export type LeadOpsEntity = "CUSTOMER" | "LEAD" | "CONTACT" | "OPPORTUNITY";
@@ -305,13 +306,13 @@ export function recordDetailFromRaw(input: {
     technicalId: `CONTACT:${id ?? "unknown"}`,
     entityType: "CONTACT",
     leads2bId: id,
-    sourceEndpoint: "unknown",
+    sourceEndpoint: "/customer/contact_by_id/{id}",
     basic: basicFromRecord(record),
     commercial: commercialFromRecord(record),
     dates: datesFromRecord(record),
     customFields: customFieldsFromRecord(record),
     raw: input.includeRaw ? input.raw : undefined,
-    warnings: ["Detalhe direto de CONTACT ainda não tem endpoint confiável."]
+    warnings: []
   };
 }
 
@@ -361,10 +362,10 @@ function dealToRecord(deal: Record<string, unknown>, entity: DealEntity, include
 
 function basicFromRecord(record: Record<string, unknown>): LeadOpsRecord["basic"] {
   return {
-    name: firstString(record.mainContactName, record.main_contact, record.name),
-    company: firstString(record.company_name, record.social_reason),
-    email: firstString(record.mainContactEmail, record.email),
-    phone: firstString(record.mainContactPhone, record.phone, record.phone_com, record.cel_phone),
+    name: firstString(record.mainContactName, record.main_contact, record.name, record.contact_name),
+    company: firstString(record.company_name, record.social_reason, record.customer_company_name, record.customer_name),
+    email: firstString(record.mainContactEmail, record.email, record.contact_email),
+    phone: firstString(record.mainContactPhone, record.phone, record.phone_com, record.cel_phone, record.contact_phone),
     document: firstString(record.cnpj, record.cpf, record.document)
   };
 }
@@ -375,15 +376,15 @@ function commercialFromRecord(record: Record<string, unknown>): LeadOpsRecord["c
     pipeline: firstString(record.pipeline_name),
     stage: firstString(record.pipeline_item_name, record.pipeline_item_value),
     status: firstString(record.status, record.pipeline_item_value, record.temperature),
-    responsible: firstString(record.user_name, record.id_user),
-    value: numberValue(record.value, record.pipeline_item_value),
+    responsible: firstString(record.user_name, record.name_user, record.id_user),
+    value: numberValue(record.value, record.total_value, record.pipeline_item_value),
     lossReason: firstString(record.loss_reason_name, record.loss_reason)
   };
 }
 
 function datesFromRecord(record: Record<string, unknown>): LeadOpsRecord["dates"] {
   return {
-    createdAt: firstString(record.created_at, record.create_date),
+    createdAt: firstString(record.created_at, record.create_date, record.opportunity_date),
     updatedAt: firstString(record.updated_at, record.update_date),
     nextActionAt: firstString(record.next_action_date)
   };
@@ -393,7 +394,10 @@ function customFieldsFromRecord(record: Record<string, unknown>): Record<string,
   const customFields: Record<string, unknown> = {};
 
   for (const key of ["parameters", "contactParameters", "custom_fields", "fields"]) {
-    const value = record[key];
+    let value = record[key];
+    if (typeof value === "string") {
+      try { value = JSON.parse(value); } catch { /* Preserve opaque data in raw only. */ }
+    }
     if (value && typeof value === "object") {
       customFields[key] = value;
     }
@@ -618,24 +622,17 @@ function compareDateDesc(a?: string, b?: string): number {
 
 function dateAtOrAfter(value: string | undefined, start: string): boolean {
   const valueTime = parseDate(value);
-  const startTime = parseDate(start);
+  const startTime = dateBoundary(start, "start");
   return valueTime !== undefined && startTime !== undefined && valueTime >= startTime;
 }
 
 function dateAtOrBefore(value: string | undefined, end: string): boolean {
   const valueTime = parseDate(value);
-  const endTime = parseDate(end);
-  return valueTime !== undefined && endTime !== undefined && valueTime <= endTime + 86_399_999;
+  const endTime = dateBoundary(end, "end");
+  return valueTime !== undefined && endTime !== undefined && valueTime <= endTime;
 }
 
-function parseDate(value: string | undefined): number | undefined {
-  if (!value) {
-    return undefined;
-  }
-
-  const parsed = Date.parse(value);
-  return Number.isNaN(parsed) ? undefined : parsed;
-}
+const parseDate = parseApiDate;
 
 function splitEmails(value: unknown): string[] {
   return textValue(value)
@@ -683,8 +680,8 @@ function numberValue(...values: unknown[]): number | undefined {
       return value;
     }
 
-    if (typeof value === "string") {
-      const normalized = value.replace(/\./g, "").replace(",", ".");
+    if (typeof value === "string" && value.trim()) {
+      const normalized = value.includes(",") ? value.replace(/\./g, "").replace(",", ".") : value;
       const number = Number(normalized);
       if (Number.isFinite(number)) {
         return number;
