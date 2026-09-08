@@ -16,6 +16,14 @@ Servidor MCP independente para consultar dados, investigar atribuição e operar
 
 As escritas são opt-in. Os contratos internos são instáveis e dependem de permissões e regras da conta. Consulte [ferramentas e limites](docs/MCP-TOOLS.md) e [evidência dos endpoints](docs/API-ENDPOINTS.md).
 
+## Escolha seu cliente
+
+| Cliente | Instalação |
+|---|---|
+| Claude Desktop | Pacote `.mcpb`; instruções abaixo |
+| Codex app | [Configuração local com Node e `config.toml`](docs/CHATGPT-CODEX.md) |
+| ChatGPT desktop com MCP local | [Adicionar um servidor STDIO](docs/CHATGPT-CODEX.md#chatgpt-desktop-interface-de-mcp-local) |
+
 ## Claude Desktop no Windows ou macOS
 
 O arquivo `leads2b-mcp-0.3.0.mcpb` inclui o servidor e suas dependências de produção. O Claude Desktop fornece o runtime Node; quem instala a extensão não precisa de Git, terminal ou npm.
@@ -28,11 +36,11 @@ O arquivo `leads2b-mcp-0.3.0.mcpb` inclui o servidor e suas dependências de pro
 
 Os campos dos tokens são sensíveis no manifesto e usam o armazenamento protegido do sistema oferecido pelo Claude. Extensões privadas precisam ser atualizadas instalando o novo arquivo. A instalação pode depender da política da organização. [Instruções oficiais do Claude](https://support.claude.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop).
 
-### Como obter os tokens
+## Como obter os tokens
 
 Na Leads2b, abra **Configurações > Integrações**. A seção **Integração da Leads2b (via API)** permite copiar a chave de empresa; a seção de **API V2, chave por usuário** permite gerar ou copiar a chave do usuário. O [guia de tokens](docs/API-TOKENS.md) mostra o passo a passo, os campos correspondentes no MCP e como validar o acesso.
 
-### Modos de escrita
+## Modos de escrita
 
 Uma chave v1 de empresa pode permitir consultas e CRUD de customers/contatos, mas não fornecer contexto de usuário para negócios. Para CRUD de leads/oportunidades, `LEADS2B_API_V1_TOKEN` deve autenticar um usuário autorizado. Confira `apis.v1.userContext` no health check. O MCP não troca tokens entre APIs automaticamente.
 
@@ -92,6 +100,7 @@ Após instalar o pacote local, importe `leads2b-mcp/lead-ops`. Essa entrada expo
 ## Documentação
 
 - [Ferramentas, schemas e CRUD](docs/MCP-TOOLS.md)
+- [Instalação no Codex app e no ChatGPT desktop](docs/CHATGPT-CODEX.md)
 - [Como obter e configurar os tokens](docs/API-TOKENS.md)
 - [Endpoints, autenticação e validação](docs/API-ENDPOINTS.md)
 - [Atribuição e origem](docs/ATRIBUICAO-E-ORIGEM.md)
