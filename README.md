@@ -2,8 +2,6 @@
 
 Servidor MCP independente para consultar dados, investigar atribuição e operar o CRUD básico da Leads2b. Usa `stdio`, TypeScript e o SDK oficial do MCP. Não é afiliado à Leads2b.
 
-**Versão candidata 0.3.0.** O pacote pode ser gerado localmente; esta documentação não pressupõe publicação no npm, release no GitHub ou homologação no Windows.
-
 ## O que faz
 
 | Área | Ações |
@@ -22,15 +20,19 @@ As escritas são opt-in. Os contratos internos são instáveis e dependem de per
 
 O arquivo `leads2b-mcp-0.3.0.mcpb` inclui o servidor e suas dependências de produção. O Claude Desktop fornece o runtime Node; quem instala a extensão não precisa de Git, terminal ou npm.
 
-1. Obtenha o `.mcpb` de uma origem confiável. Para gerar a versão candidata, veja a seção de desenvolvimento abaixo.
+1. Obtenha o arquivo `leads2b-mcp-0.3.0.mcpb`. Para gerar o pacote a partir do código-fonte, veja a seção de desenvolvimento abaixo.
 2. No Claude Desktop, abra **Settings > Extensions > Advanced settings > Install Extension…** e selecione o arquivo.
-3. Preencha os tokens autorizados das APIs internas v1 e v2, da mesma conta. Comece com `write_mode=disabled`.
+3. [Obtenha os tokens na Leads2b](docs/API-TOKENS.md) e preencha os campos **Token API v1** e **Token API v2** com credenciais da mesma conta. Comece com `write_mode=disabled`.
 4. Peça: “Execute `leads2b_health_check` e informe autenticação, contexto de usuário e restrições, sem exibir tokens”.
 5. Teste uma consulta conhecida. Um health check positivo não comprova permissão em todos os endpoints.
 
 Os campos dos tokens são sensíveis no manifesto e usam o armazenamento protegido do sistema oferecido pelo Claude. Extensões privadas precisam ser atualizadas instalando o novo arquivo. A instalação pode depender da política da organização. [Instruções oficiais do Claude](https://support.claude.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop).
 
-### Tokens e escrita
+### Como obter os tokens
+
+Na Leads2b, abra **Configurações > Integrações**. A seção **Integração da Leads2b (via API)** permite copiar a chave de empresa; a seção de **API V2, chave por usuário** permite gerar ou copiar a chave do usuário. O [guia de tokens](docs/API-TOKENS.md) mostra o passo a passo, os campos correspondentes no MCP e como validar o acesso.
+
+### Modos de escrita
 
 Uma chave v1 de empresa pode permitir consultas e CRUD de customers/contatos, mas não fornecer contexto de usuário para negócios. Para CRUD de leads/oportunidades, `LEADS2B_API_V1_TOKEN` deve autenticar um usuário autorizado. Confira `apis.v1.userContext` no health check. O MCP não troca tokens entre APIs automaticamente.
 
@@ -56,7 +58,7 @@ npm run build
 npm run package:mcpb
 ```
 
-O arquivo gerado fica em `artifacts/`. A CI está preparada para Linux/Windows e Node 22/24; configurar a matriz não equivale a executá-la nem homologar o Claude em uma máquina Windows.
+O arquivo gerado fica em `artifacts/`. A CI executa testes, build, auditoria de dependências e verificação do pacote em Linux e Windows com Node 22 e 24.
 
 Para desenvolver com `.env`, copie `.env.example` para `.env` (`Copy-Item .env.example .env` no PowerShell). Alternativamente, passe os tokens pelo campo `env` do cliente MCP. Não dependa de `cwd` no arquivo do Claude:
 
@@ -90,6 +92,7 @@ Após instalar o pacote local, importe `leads2b-mcp/lead-ops`. Essa entrada expo
 ## Documentação
 
 - [Ferramentas, schemas e CRUD](docs/MCP-TOOLS.md)
+- [Como obter e configurar os tokens](docs/API-TOKENS.md)
 - [Endpoints, autenticação e validação](docs/API-ENDPOINTS.md)
 - [Atribuição e origem](docs/ATRIBUICAO-E-ORIGEM.md)
 - [Prompts de uso](examples/usage-prompts.md)

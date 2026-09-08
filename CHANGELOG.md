@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.3.0 (candidata, não publicada)
+## 0.3.0
 
 - Pacote `.mcpb` com tokens sensíveis, leitura por padrão e dependências de produção; instruções de Claude Desktop e PowerShell.
 - Node >=22, lockfile atualizado e matriz CI Linux/Windows com Node 22/24. Override de `tmp` para versão corrigida usada pelo empacotador de desenvolvimento.
@@ -16,7 +16,7 @@
 
 Customer create/update agora usa a API v1 observada. Criação exige `fields.type` (`PERSON` ou `ORGANIZATION`); campos arbitrários de escrita não são mais aceitos. Métodos experimentais `Leads2bV2Client.createCustomer/updateCustomer` foram removidos. Caminhos legados de leitura em `dist/*` continuam disponíveis; a migração de automações instaladas é manual.
 
-Tokens v1 de empresa podem continuar válidos para leitura/customers sem permitir CRUD de negócios. Configure token v1 com contexto de usuário somente no ambiente que for operar esses negócios. Windows e release permanecem sujeitos a homologação/publicação separadas.
+Tokens v1 de empresa podem continuar válidos para leitura/customers sem permitir CRUD de negócios. Configure token v1 com contexto de usuário somente no ambiente que for operar esses negócios.
 
 
 ## 0.2.0
