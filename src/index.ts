@@ -31,7 +31,7 @@ const v2 = new Leads2bV2Client(
 
 const server = new McpServer({
   name: "leads2b-mcp",
-  version: "0.4.0"
+  version: "0.4.1"
 });
 
 registerHealthTool(server, { config, v1, v2 });

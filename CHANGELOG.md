@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.1 (candidato local)
+
+- Atualizações compatíveis no lockfile: `fast-uri` 3.1.8, `ip-address` 10.7.3, `proxy-addr` 2.0.8 e `source-map-js` 1.2.2.
+- Audit de produção sem vulnerabilidades conhecidas na verificação de 05/10/2026. Audit completo ainda aponta `node-forge` e seu dependente `@anthropic-ai/mcpb`, ambos de desenvolvimento, sem patch publicado.
+- Dependências diretas e empacotador preservados; nenhuma atualização forçada, override criptográfico ou substituição estrutural. Consulte [audit de dependências](docs/DEPENDENCY-AUDIT.md).
+
 ## 0.4.0 (candidato local)
 
 - Health check separa catálogo registrado, endpoints testados, pré-visualização e pré-requisitos live. Falha em `/users` não omite outras ferramentas v2.

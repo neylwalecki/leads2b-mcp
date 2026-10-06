@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "leads2b-mcp",
   "display_name": "Leads2b MCP (Community)",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Consultas, atribuição e CRUD opt-in na Leads2b. Projeto independente, não afiliado à Leads2b.",
   "author": {
     "name": "Neyl Walecki",

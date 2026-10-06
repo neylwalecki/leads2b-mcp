@@ -26,9 +26,9 @@ As escritas são opt-in. Os contratos internos são instáveis e dependem de per
 
 ## Claude Desktop no Windows ou macOS
 
-O arquivo `leads2b-mcp-0.4.0.mcpb` inclui o servidor e suas dependências de produção. O Claude Desktop fornece o runtime Node; quem instala a extensão não precisa de Git, terminal ou npm.
+O arquivo `leads2b-mcp-0.4.1.mcpb` inclui o servidor e suas dependências de produção. O Claude Desktop fornece o runtime Node; quem instala a extensão não precisa de Git, terminal ou npm.
 
-1. Obtenha o arquivo `leads2b-mcp-0.4.0.mcpb`. Para gerar o pacote a partir do código-fonte, veja a seção de desenvolvimento abaixo.
+1. Obtenha o arquivo `leads2b-mcp-0.4.1.mcpb`. Para gerar o pacote a partir do código-fonte, veja a seção de desenvolvimento abaixo.
 2. No Claude Desktop, abra **Settings > Extensions > Advanced settings > Install Extension…** e selecione o arquivo.
 3. [Obtenha os tokens na Leads2b](docs/API-TOKENS.md) e preencha os campos **Token API v1** e **Token API v2** com credenciais da mesma conta. Comece com `write_mode=disabled`.
 4. Peça: “Execute `leads2b_health_check` e informe autenticação, contexto de usuário e restrições, sem exibir tokens”.
