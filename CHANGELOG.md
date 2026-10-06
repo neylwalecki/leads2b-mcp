@@ -4,6 +4,8 @@ Mudanças ainda não distribuídas ficam em `Unreleased`. Versões publicadas es
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-10-06
+
 ### Adicionado
 
 - Ferramentas experimentais para marcar oportunidades como ganhas ou perdidas com motivo, criar anotações e registrar atividades no histórico.
