@@ -22,6 +22,7 @@ Mudanças ainda não distribuídas ficam em `Unreleased`. Versões publicadas es
 
 ### Segurança
 
+- Atualizado `@modelcontextprotocol/sdk` para 1.31.0, com correção de [GHSA-6qxp-vccf-f47h](https://github.com/advisories/GHSA-6qxp-vccf-f47h).
 - Atualizados `fast-uri`, `ip-address`, `proxy-addr` e `source-map-js` no lockfile.
 - Removida a cadeia de desenvolvimento `@anthropic-ai/mcpb`/`node-forge` e o override de `tmp`.
 

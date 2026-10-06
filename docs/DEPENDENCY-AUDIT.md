@@ -14,11 +14,11 @@ O resultado depende do lockfile e do banco de avisos no momento da consulta. Um 
 
 O empacotador usa `fflate` para criar o arquivo ZIP e AJV com `ajv-formats` para validar o manifesto. `@anthropic-ai/mcpb`, `node-forge` e o override de `tmp` não fazem parte da árvore atual. O arquivo final inclui somente dependências de produção; ferramentas de desenvolvimento não são distribuídas.
 
-### Aviso conhecido no SDK
+### Atualização de segurança do SDK
 
-O lockfile usa `@modelcontextprotocol/sdk` 1.29.0. O [GHSA-6qxp-vccf-f47h](https://github.com/advisories/GHSA-6qxp-vccf-f47h), incluído no banco de avisos em 06/10/2026, faz `npm audit` reportar severidade alta para versões de 1.12.0 até 1.30.1. A correção está na 1.31.0.
+O lockfile usa `@modelcontextprotocol/sdk` 1.31.0, que inclui a correção do [GHSA-6qxp-vccf-f47h](https://github.com/advisories/GHSA-6qxp-vccf-f47h). O aviso afeta versões de 1.12.0 até 1.30.1.
 
-O aviso afeta o cliente OAuth HTTP do SDK. A referência oficial exclui servidores MCP e clientes STDIO; este projeto usa essas interfaces, sem cliente OAuth HTTP. O aviso continua presente no audit enquanto o lockfile não for atualizado. Não suprima a verificação; atualizações do SDK devem passar pelos testes e pela verificação do pacote.
+O aviso afeta o cliente OAuth HTTP do SDK. A referência oficial exclui servidores MCP e clientes STDIO; este projeto usa essas interfaces, sem cliente OAuth HTTP. Mantenha o SDK atualizado e execute o audit completo; não suprima a verificação.
 
 ## Gerar e verificar um pacote
 
