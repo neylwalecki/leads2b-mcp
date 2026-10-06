@@ -1,6 +1,6 @@
 # Ferramentas MCP
 
-Contrato do candidato 0.4.1. A lista abaixo distingue ferramenta implementada, permissão da conta e cobertura dos dados.
+Contrato do candidato 0.4.2. A lista abaixo distingue ferramenta implementada, permissão da conta e cobertura dos dados.
 
 ## Retorno Padrão
 

@@ -26,9 +26,9 @@ As escritas são opt-in. Os contratos internos são instáveis e dependem de per
 
 ## Claude Desktop no Windows ou macOS
 
-O arquivo `leads2b-mcp-0.4.1.mcpb` inclui o servidor e suas dependências de produção. O Claude Desktop fornece o runtime Node; quem instala a extensão não precisa de Git, terminal ou npm.
+O arquivo `leads2b-mcp-0.4.2.mcpb` inclui o servidor e suas dependências de produção. O Claude Desktop fornece o runtime Node; quem instala a extensão não precisa de Git, terminal ou npm.
 
-1. Obtenha o arquivo `leads2b-mcp-0.4.1.mcpb`. Para gerar o pacote a partir do código-fonte, veja a seção de desenvolvimento abaixo.
+1. Obtenha o arquivo `leads2b-mcp-0.4.2.mcpb`. Para gerar o pacote a partir do código-fonte, veja a seção de desenvolvimento abaixo.
 2. No Claude Desktop, abra **Settings > Extensions > Advanced settings > Install Extension…** e selecione o arquivo.
 3. [Obtenha os tokens na Leads2b](docs/API-TOKENS.md) e preencha os campos **Token API v1** e **Token API v2** com credenciais da mesma conta. Comece com `write_mode=disabled`.
 4. Peça: “Execute `leads2b_health_check` e informe autenticação, contexto de usuário e restrições, sem exibir tokens”.
@@ -112,3 +112,5 @@ Após instalar o pacote local, importe `leads2b-mcp/lead-ops`. Essa entrada expo
 Os endpoints internos `app.leads2b.com/api/v1` e `/api/v2` são diferentes da API pública `api.leads2b.com/v2`. O MCP não promete cobrir toda a plataforma. Ganho/perda de oportunidade, anotação e atividade possuem ferramentas experimentais baseadas no frontend público, sem validação live. Ganho/perda exigem confirmação extra. Merges, operações em lote e conversões artificiais não possuem ferramentas específicas. A API avançada é opt-in e não torna um contrato desconhecido confiável.
 
 O servidor retorna os dados da conta autenticada integralmente nas consultas brutas. Restrinja o acesso ao cliente MCP e compartilhe somente exemplos sanitizados. O pacote é construído por lista explícita de arquivos, sem `.env`, pesquisas privadas ou histórico Git.
+
+O empacotador gera ZIP com fflate e valida o manifesto 0.3 por schema oficial congelado. `npm run package:mcpb` recusa sobrescrever um candidato existente; preserve ou mova o arquivo anterior antes de gerar novamente a mesma versão. O pacote é não assinado. Detalhes de dependências e proveniência: [audit](docs/DEPENDENCY-AUDIT.md).

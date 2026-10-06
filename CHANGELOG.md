@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.2 (candidato local)
+
+- Substituído o CLI MCPB por geração ZIP com fflate, preservando staging e dependências de produção.
+- Removida a cadeia de desenvolvimento node-forge e o override de tmp, sem uso restante.
+- Adicionada validação do manifesto pelo schema oficial 0.3 congelado, AJV e políticas locais de segurança.
+- Adicionados testes de manifesto, filtros, permissões, links e preservação de candidatos existentes.
+- CI passa a verificar o audit completo, incluindo dependências de desenvolvimento.
+
 ## 0.4.1 (candidato local)
 
 - Atualizações compatíveis no lockfile: `fast-uri` 3.1.8, `ip-address` 10.7.3, `proxy-addr` 2.0.8 e `source-map-js` 1.2.2.

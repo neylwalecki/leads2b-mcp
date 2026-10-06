@@ -1,6 +1,6 @@
 {
   "name": "leads2b-mcp",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Unofficial community MCP server for Leads2b diagnostics and opt-in CRUD operations.",
   "type": "module",
   "license": "MIT",
@@ -50,8 +50,9 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@anthropic-ai/mcpb": "2.1.2",
     "@types/node": "^24.10.1",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
     "fflate": "^0.8.3",
     "tsx": "^4.22.3",
     "typescript": "^6.0.3",
@@ -59,9 +60,6 @@
   },
   "engines": {
     "node": ">=22"
-  },
-  "overrides": {
-    "tmp": "^0.2.7"
   },
   "exports": {
     "./lead-ops": {

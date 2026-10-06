@@ -30,7 +30,7 @@ jobs:
       - run: npm test
       - run: npm run typecheck
       - run: npm run build
-      - run: npm audit --omit=dev
+      - run: npm audit
       - run: npm pack --dry-run --json
       - run: npm run package:mcpb
       - run: npm run verify:mcpb

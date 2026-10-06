@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { validateBundleManifest } from "./mcpb-support.mjs";
 import { createHash } from "node:crypto";
 import { mkdtemp, readFile, mkdir, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -36,6 +37,7 @@ try {
     await mkdir(dirname(path), { recursive: true });
     await writeFile(path, data);
   }
+  await validateBundleManifest(manifest, pkg.version, extractDir);
   for (const mode of ["disabled", "preview"]) {
     const client = new Client({ name: "leads2b-package-verifier", version: pkg.version });
     const transport = new StdioClientTransport({ command: process.execPath, args: [join(extractDir, "dist/index.js")], env: {
