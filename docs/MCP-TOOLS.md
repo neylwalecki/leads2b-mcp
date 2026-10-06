@@ -1,10 +1,10 @@
 # Ferramentas MCP
 
-Contrato do candidato 0.4.2. A lista abaixo distingue ferramenta implementada, permissão da conta e cobertura dos dados.
+Referência das ferramentas do servidor. Schemas completos estão disponíveis em `tools/list`; o catálogo registrado não comprova permissão da conta nem cobertura dos dados.
 
-## Retorno Padrão
+## Formato de retorno
 
-As ferramentas retornam JSON estruturado:
+Os resultados MCP incluem `structuredContent` com dados estruturados e `content` com resumo ou mensagem de erro. Em falhas, `isError=true`. Campos de resultado:
 
 ```ts
 type ToolResult<T> = {
@@ -12,13 +12,22 @@ type ToolResult<T> = {
   data?: T;
   summary?: string;
   warnings?: string[];
-  source: {
+  source?: {
     api: "v1" | "v2" | "snippet" | "local";
     endpoint?: string;
     stability: "confirmed" | "observed" | "experimental" | "unknown";
   };
+  error?: {
+    status?: number;
+    code?: string;
+    message: string;
+    endpoint?: string;
+    details?: unknown;
+  };
 };
 ```
+
+Erros HTTP preservam status, endpoint e detalhes quando disponíveis. Falhas de mutação podem incluir `writeState` e releitura; confira a seção da operação antes de repetir a chamada.
 
 ## Health
 
@@ -35,7 +44,7 @@ O health testa somente `GET v1 /user/logged/` e `GET v2 /users` (mais `/latest` 
 - Execução verificada: `writeTools.verifiedExecutionTools`: vazio; health não faz mutação. `writeTools.availableTools` é o alias dos previews ou pré-requisitos live, conforme o modo.
 
 
-## Catálogos e Operação
+## Catálogos e operação
 
 | Ferramenta | API | Endpoint |
 |---|---|---|
@@ -67,7 +76,7 @@ O health testa somente `GET v1 /user/logged/` e `GET v2 /users` (mais `/latest` 
 | `leads2b_get_company_events` | v2 | `/companies/event` |
 | `leads2b_list_chrome_extension_users` | v1 | `/chrome_extension/users` |
 
-## Customers e Leads
+## Customers e leads
 
 | Ferramenta | API | Observação |
 |---|---|---|
@@ -87,9 +96,9 @@ O health testa somente `GET v1 /user/logged/` e `GET v2 /users` (mais `/latest` 
 
 `returnAll=true` devolve `{response, coverage}` com o envelope original integral, inclusive formatos desconhecidos; não combine com `limit` ou `offset`. Um formato desconhecido na saída limitada gera erro explícito, nunca zero clientes. A busca transfere a resposta original inteira antes do recorte. Chamadas de páginas locais refazem a busca; alterações na conta podem mudar os resultados entre chamadas.
 
-## Operação Comercial de Leads
+## Operação comercial de leads
 
-Ferramentas genéricas, agnósticas por cliente, para automações que alimentam planilhas, CRMs internos e relatórios.
+Ferramentas de coleta e busca para automações, planilhas e relatórios.
 
 | Ferramenta | API | Observação |
 |---|---|---|
@@ -151,7 +160,7 @@ Observações:
 
 `entity` deve ser `LEAD`, `CONTACT` ou `OPPORTUNITY`.
 
-## Snippet e Webhooks
+## Snippet e webhooks
 
 | Ferramenta | API | Endpoint |
 |---|---|---|
@@ -190,7 +199,7 @@ Entrada de criação: `{fields: {...}}`. Edição: `{id, fields: {...}}`. Exclus
 
 A conta pode exigir campos customizados adicionais. Consulte equipe, pipelines, etapas e colunas antes de criar. Não invente IDs. O esquema completo aparece em `tools/list` e em `src/crud/schemas.ts`.
 
-Em leads, `email`/`phone` são copiados para `email_contact`/`phone_contact` quando estes não forem fornecidos, pois a criação usa os campos de contato. Para nome do negócio, use `parameters.deal_name` em lead ou `parameters.op_name` em oportunidade. Na edição de lead, `name` refere-se ao contato; na oportunidade, use `description` para notas. O envio de objetos deve preservar chaves existentes quando a intenção for alterar somente uma delas.
+Em leads, `email`/`phone` são copiados para `email_contact`/`phone_contact` quando estes não forem fornecidos, pois a criação usa os campos de contato. Para nome do negócio, use `parameters.deal_name` em lead ou `parameters.op_name` em oportunidade. Na edição de lead, `name` refere-se ao contato; na oportunidade, `description` edita a descrição. Para adicionar uma anotação ao histórico, use `leads2b_create_note`. O envio de objetos deve preservar chaves existentes quando a intenção for alterar somente uma delas.
 
 A edição de leads/oportunidades usa `PUT /deal/index` com `{deal: {id, type}, edit_data: fields}`. As antigas rotas de edição não persistiram todos os campos nos testes. Criações/edições de customers v2 presumidas na 0.2.0 foram substituídas pelas rotas v1 observadas.
 
@@ -210,7 +219,7 @@ Importações em massa, merges, ganho/perda de lead, pedidos, produtos e convers
 
 ## Encerramento e histórico experimentais
 
-As quatro ferramentas abaixo respeitam `disabled` (não registradas), `preview` (sem chamadas, inclusive autenticação) e `live` (uma mutação, sem retry automático). Exigem usuário v1 para execução. Seus contratos foram observados no frontend público; não foram validados em conta conectada. Consulte [proveniência e limites](API-ENDPOINTS.md#contratos-experimentais-observados-em-05102026).
+As quatro ferramentas abaixo respeitam `disabled` (não registradas), `preview` (sem chamadas, inclusive autenticação) e `live` (uma mutação, sem retry automático). Exigem usuário v1 para execução. Seus contratos foram observados no frontend público; não foram validados em conta conectada. Consulte [proveniência e limites](API-ENDPOINTS.md#operações-experimentais).
 
 | Ferramenta | Schema | Comportamento |
 |---|---|---|

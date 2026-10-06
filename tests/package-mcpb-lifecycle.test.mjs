@@ -20,6 +20,7 @@ beforeEach(async () => {
   for (const directory of ["dist", "docs", "examples", "artifacts"]) await mkdir(join(root, directory));
   await writeFile(join(root, "dist/index.js"), "export {};\n");
   for (const file of ["README.md", "CHANGELOG.md", "LICENSE"]) await writeFile(join(root, file), "example");
+  await writeFile(join(root, "CONTRIBUTING.md"), "# Contributing\n");
   await writeFile(join(root, "package.json"), JSON.stringify({ name: "example", version: manifest.version, type: "module", dependencies: {}, engines: { node: ">=22" } }));
   await writeFile(join(root, "package-lock.json"), "{}");
   await writeFile(join(root, "manifest.json"), JSON.stringify(manifest));
@@ -45,4 +46,11 @@ it("publishes a complete ZIP and cleans staging after success", async () => {
   expect(files["package-lock.json"]).toBeUndefined();
   expect(JSON.parse(new TextDecoder().decode(files["package.json"])).dependencies).toEqual({});
   await expect(access(subprocess.stage)).rejects.toThrow();
+});
+it("includes the contribution guide linked by bundled documentation", async () => {
+  await writeFile(join(root, "README.md"), "[Contributing](CONTRIBUTING.md)\n");
+  await packageMcpb(root, "example-npm-cli");
+  const files = unzipSync(await readFile(output()));
+  expect(files["CONTRIBUTING.md"]).toBeDefined();
+  expect(new TextDecoder().decode(files["CONTRIBUTING.md"])).toBe("# Contributing\n");
 });

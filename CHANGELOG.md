@@ -1,34 +1,37 @@
 # Changelog
 
-## 0.4.2 (candidato local)
+Mudanças ainda não distribuídas ficam em `Unreleased`. Versões publicadas estão em [Releases](https://github.com/neylwalecki/leads2b-mcp/releases).
 
-- Substituído o CLI MCPB por geração ZIP com fflate, preservando staging e dependências de produção.
-- Removida a cadeia de desenvolvimento node-forge e o override de tmp, sem uso restante.
-- Adicionada validação do manifesto pelo schema oficial 0.3 congelado, AJV e políticas locais de segurança.
-- Adicionados testes de manifesto, filtros, permissões, links e preservação de candidatos existentes.
-- CI passa a verificar o audit completo, incluindo dependências de desenvolvimento.
+## [Unreleased]
 
-## 0.4.1 (candidato local)
+### Adicionado
 
-- Atualizações compatíveis no lockfile: `fast-uri` 3.1.8, `ip-address` 10.7.3, `proxy-addr` 2.0.8 e `source-map-js` 1.2.2.
-- Audit de produção sem vulnerabilidades conhecidas na verificação de 05/10/2026. Audit completo ainda aponta `node-forge` e seu dependente `@anthropic-ai/mcpb`, ambos de desenvolvimento, sem patch publicado.
-- Dependências diretas e empacotador preservados; nenhuma atualização forçada, override criptográfico ou substituição estrutural. Consulte [audit de dependências](docs/DEPENDENCY-AUDIT.md).
+- Ferramentas experimentais para marcar oportunidades como ganhas ou perdidas com motivo, criar anotações e registrar atividades no histórico.
+- Releitura após as novas mutações, com solicitação aceita, rejeição e resultado incerto distinguidos. Ganho/perda exigem confirmação extra.
+- Preservação de `custom_columns` nos detalhes normalizados, incluindo JSON, arrays, zero e null.
+- Validação do manifesto MCPB 0.3 por schema oficial e geração ZIP com `fflate`.
+- Testes de manifesto, filtros, permissões, links e preservação de arquivos existentes.
 
-## 0.4.0 (candidato local)
+### Alterado
 
-- Health check separa catálogo registrado, endpoints testados, pré-visualização e pré-requisitos live. Falha em `/users` não omite outras ferramentas v2.
-- Busca de customers retorna até 25 registros por padrão, com `limit`/`offset` locais e cobertura explícita; `returnAll=true` preserva a resposta integral. Recorte não reduz a transferência original.
-- Ferramentas experimentais para ganhar/perder oportunidade, criar anotação e registrar atividade no histórico. Contratos observados no frontend público; validação live pendente. Ganho/perda exigem confirmação extra, sem clonagem, pós-venda ou reativação.
-- Histórico usa formulário no envelope `data`; todas as novas mutações são enviadas uma vez e acompanhadas de releitura, inclusive em falha ambígua.
-- Detalhes normalizados preservam também `custom_columns`, incluindo JSON, arrays, zero e null.
+- Health check separa catálogo registrado, endpoints testados, pré-visualização e requisitos de execução. Falha em `/users` não omite outras ferramentas v2.
+- Busca de customers retorna até 25 registros por padrão, com `limit`/`offset` locais e cobertura explícita. `returnAll=true` preserva a resposta integral.
+- CI verifica o audit completo, incluindo dependências de desenvolvimento.
+- Guias de instalação, configuração, ferramentas e contribuição atualizados; cobertura e empacotamento documentados separadamente.
+- Pacote MCPB inclui o guia de contribuição referenciado pela documentação.
+
+### Segurança
+
+- Atualizados `fast-uri`, `ip-address`, `proxy-addr` e `source-map-js` no lockfile.
+- Removida a cadeia de desenvolvimento `@anthropic-ai/mcpb`/`node-forge` e o override de `tmp`.
 
 ### Migração
 
-`availableTools` do health check agora representa o catálogo registrado. Use `verifiedCapabilities` para os GETs testados e `writeTools.livePrerequisitesMetTools` para pré-requisitos conhecidos, sem inferir permissão de escrita. `writeTools.previewTools` independe de tokens ou contexto de usuário.
+`availableTools` do health check representa o catálogo registrado. Use `verifiedCapabilities` para os GETs testados e `writeTools.livePrerequisitesMetTools` para requisitos conhecidos, sem inferir permissão de escrita. `writeTools.previewTools` independe de tokens ou contexto de usuário.
 
-`leads2b_search_customers` passa a retornar `{customers, coverage}`. Para receber a resposta original, use `returnAll=true`, que retorna `{response, coverage}`; não combine com `limit`/`offset`. A paginação local refaz a consulta e não fornece snapshot atômico.
+`leads2b_search_customers` retorna `{customers, coverage}`. Para a resposta original, use `returnAll=true`, que retorna `{response, coverage}`; não combine com `limit`/`offset`. O recorte local não reduz a transferência original e chamadas de páginas refazem a consulta, sem snapshot atômico.
 
-## 0.3.0
+## 0.3.0 (pré-release) - 2026-09-08
 
 - Pacote `.mcpb` com tokens sensíveis, leitura por padrão e dependências de produção; instruções de Claude Desktop e PowerShell.
 - Node >=22, lockfile atualizado e matriz CI Linux/Windows com Node 22/24. Override de `tmp` para versão corrigida usada pelo empacotador de desenvolvimento.

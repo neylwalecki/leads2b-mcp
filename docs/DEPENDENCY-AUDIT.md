@@ -1,46 +1,54 @@
-# Audit de dependências do candidato 0.4.2
+# Dependências e empacotamento
 
-O empacotamento usa fflate diretamente. `@anthropic-ai/mcpb` e node-forge foram removidos da árvore de desenvolvimento. O override de tmp foi removido após confirmar ausência de consumidores restantes. AJV e ajv-formats foram declarados também como dependências diretas de desenvolvimento para validar o pacote. Ambos já eram dependências transitivas de produção do SDK e continuam no runtime por essa razão; a mudança não acrescenta arquivos ou versões à árvore de produção.
+## Auditoria de dependências
 
-A CI verifica `npm audit` completo. A ausência de avisos deve ser reconfirmada em cada execução, pois o banco de vulnerabilidades pode mudar.
+O projeto usa `package-lock.json` para instalações reproduzíveis. A CI executa `npm audit` em toda a árvore, incluindo dependências de desenvolvimento.
 
-## Schema congelado
+```sh
+npm ci
+npm audit
+npm audit --omit=dev
+```
 
-O arquivo `scripts/vendor/mcpb-manifest-v0.3.schema.json` foi copiado de `@anthropic-ai/mcpb` 2.1.2, publicado em `https://registry.npmjs.org/@anthropic-ai/mcpb/-/mcpb-2.1.2.tgz`.
+O resultado depende do lockfile e do banco de avisos no momento da consulta. Um audit sem avisos não garante ausência de vulnerabilidades. Atualizações de dependências devem passar por testes, typecheck, build e verificação do pacote.
 
-- Integridade npm: `sha512-goRbBC8ySo7SWb7tRzr+tL6FxDc4JPTRCdgfD2omba7freofvjq5rom1lBnYHZHo6Mizs1jAHJeN53aZbDoy8A==`.
-- SHA-256 do schema: `3a0ac9d845711a1b9b17dfa5a52f8b60628239d6a86a9db417206a9efc78592d`.
-- Licença MIT com aviso integral em `scripts/vendor/MCPB-LICENSE`.
-- JSON Schema draft-07; AJV com strict/allErrors e ajv-formats, sem coerção nem defaults.
+O empacotador usa `fflate` para criar o arquivo ZIP e AJV com `ajv-formats` para validar o manifesto. `@anthropic-ai/mcpb`, `node-forge` e o override de `tmp` não fazem parte da árvore atual. O arquivo final inclui somente dependências de produção; ferramentas de desenvolvimento não são distribuídas.
 
-A versão suportada continua 0.3. O projeto exige `manifest_version` explicitamente, verifica entrada existente no staging, referências de configuração e defaults seguros. Não se oferece equivalência a todos os recursos ou schemas do CLI, assinatura, verificação criptográfica ou suporte genérico a `.mcpbignore`. Atualizações do schema exigem revisão deliberada.
+### Aviso conhecido no SDK
 
-O contêiner continua ZIP, com compressão 9, nomes POSIX e permissões Unix quando aplicáveis. Os filtros atuais são finitos e estão em `scripts/mcpb-support.mjs`. Arquivos de conta e desenvolvimento são excluídos; links incluíveis são rejeitados. Um candidato existente nunca é sobrescrito. A publicação local usa hard link para o arquivo temporário completo, no mesmo diretório; sistemas de arquivos sem essa capacidade falham explicitamente.
+O lockfile usa `@modelcontextprotocol/sdk` 1.29.0. O [GHSA-6qxp-vccf-f47h](https://github.com/advisories/GHSA-6qxp-vccf-f47h), incluído no banco de avisos em 06/10/2026, faz `npm audit` reportar severidade alta para versões de 1.12.0 até 1.30.1. A correção está na 1.31.0.
 
-## Histórico: candidato 0.4.1
+O aviso afeta o cliente OAuth HTTP do SDK. A referência oficial exclui servidores MCP e clientes STDIO; este projeto usa essas interfaces, sem cliente OAuth HTTP. O aviso continua presente no audit enquanto o lockfile não for atualizado. Não suprima a verificação; atualizações do SDK devem passar pelos testes e pela verificação do pacote.
 
-Verificação: 05/10/2026. Atualização local a partir do lockfile, sem alteração de CRM, instalação no cliente ou publicação. `npm audit fix --ignore-scripts` atualizou quatro dependências transitivas dentro das faixas aceitas, sem `--force` nem novos overrides.
+## Gerar e verificar um pacote
 
-| Pacote | Antes | Depois | Caminho |
-|---|---|---|---|
-| `fast-uri` | 3.1.7 | 3.1.8 | SDK MCP, via ajv |
-| `ip-address` | 10.7.0 | 10.7.3 | SDK MCP, via express-rate-limit |
-| `proxy-addr` | 2.0.7 | 2.0.8 | SDK MCP, via express |
-| `source-map-js` | 1.2.1 | 1.2.2 | Vitest, via Vite/PostCSS; desenvolvimento |
+```sh
+npm run package:mcpb
+npm run verify:mcpb
+```
 
-## Pendência sem patch
+O arquivo fica em `artifacts/leads2b-mcp-VERSAO.mcpb`. A gravação é atômica e não substitui arquivos existentes. Para repetir a geração de uma versão, preserve ou mova o arquivo anterior. A criação usa um hard link no mesmo diretório; sistemas de arquivos sem esse recurso retornam erro.
 
-O [aviso GHSA-86w9-cpqp-85rv](https://github.com/advisories/GHSA-86w9-cpqp-85rv) afeta verificação de assinatura RSA do `node-forge` até 1.4.0. O aviso e o registro npm não apresentam versão corrigida nesta verificação. O registro npm mantém `@anthropic-ai/mcpb` 2.1.2 como versão mais recente, dependente de `node-forge`.
+O verificador extrai o pacote, confere o conteúdo e executa o servidor STDIO em `disabled` e `preview`, sem credenciais. Também gera um arquivo `.sha256`. Essa verificação cobre o pacote e o protocolo; não instala extensões nem testa operações em contas reais.
 
-O audit completo retorna duas entradas de severidade alta: `node-forge` e o pacote dependente `@anthropic-ai/mcpb`. Não são duas falhas independentes. Ambos são dependências de desenvolvimento; o empacotamento usa `npm ci --omit=dev`, e o verificador exclui dependências do empacotador do arquivo final. O código instalado do empacotador usa node-forge em seu módulo de assinatura. O projeto chama somente `pack`, sem assinatura; isso delimita o uso observado e não equivale a declarar a vulnerabilidade corrigida ou impossível de explorar.
+## Manifesto MCPB
 
-Não foi aplicada troca de biblioteca criptográfica, remoção do empacotador ou patch local em código de terceiros. Substituir a cadeia de empacotamento seria uma mudança estrutural separada, com novo contrato de validação do manifesto e compatibilidade do formato.
+O manifesto segue a versão 0.3 do [formato MCPB](https://github.com/modelcontextprotocol/mcpb). O schema é uma cópia versionada, validada em modo estrito, sem coerção de tipos nem aplicação de valores padrão.
 
-## Gates
+| Item | Origem |
+|---|---|
+| Schema | `scripts/vendor/mcpb-manifest-v0.3.schema.json` no repositório |
+| Pacote de origem | `@anthropic-ai/mcpb` 2.1.2 |
+| Tarball | [Registro npm](https://registry.npmjs.org/@anthropic-ai/mcpb/-/mcpb-2.1.2.tgz) |
+| SHA-256 do schema | `3a0ac9d845711a1b9b17dfa5a52f8b60628239d6a86a9db417206a9efc78592d` |
+| Licença | MIT; aviso original em `scripts/vendor/MCPB-LICENSE` no repositório |
 
-- `npm audit --omit=dev`: deve retornar zero vulnerabilidades conhecidas para este lockfile na data da verificação.
-- `npm audit`: continua com duas entradas altas de desenvolvimento; não é um gate aprovado.
-- Testes, typecheck, build e verificação do arquivo extraído avaliam funcionamento, conteúdo e modos de operação. Não equivalem a uma aprovação de segurança ou validação live.
-- Audit é uma consulta temporal, não uma garantia futura. O recibo local do candidato preserva as respostas JSON e o SHA-256 do arquivo gerado.
+Além do schema, a validação exige versões coerentes entre pacote e manifesto, entrada relativa existente, servidor Node, runtime `>=22`, tokens sensíveis, escrita desativada por padrão e referências válidas a `user_config`. A API avançada fica desativada no pacote.
 
-Antes de publicar, reavalie o aviso pendente e execute a matriz suportada de Windows e Node 22/24. Uma correção upstream compatível pode ser aplicada e revalidada; a ausência de patch não justifica suprimir o aviso.
+## Conteúdo e limites do formato
+
+O pacote inclui servidor compilado, documentação, exemplos, licença, manifesto e dependências de produção. O staging usa uma lista explícita de arquivos. `.env`, credenciais, pesquisa privada e histórico Git ficam fora do pacote.
+
+Os filtros de `scripts/mcpb-support.mjs` excluem arquivos de desenvolvimento e rejeitam links simbólicos incluíveis e caminhos inseguros. Nomes no ZIP usam separadores POSIX; permissões Unix são preservadas quando aplicáveis.
+
+O empacotador suporta o manifesto 0.3, sem assinatura, verificação criptográfica ou suporte a `.mcpbignore`. Ele não implementa todos os recursos do CLI MCPB. Atualizações do schema ou dos filtros devem incluir testes de conteúdo e execução do servidor extraído.

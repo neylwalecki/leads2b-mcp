@@ -49,7 +49,7 @@ const excludedNames = new Set([
   ".eslintignore", ".nycrc", ".babelrc", "package-lock.json", "yarn.lock", "tsconfig.json",
   ".internal", "research", "credentials", "credenciais", "artifacts", ".superpowers"
 ]);
-const allowedRoots = new Set(["dist", "docs", "examples", "node_modules", "CHANGELOG.md", "manifest.json", "package.json", "README.md", "LICENSE"]);
+const allowedRoots = new Set(["dist", "docs", "examples", "node_modules", "CHANGELOG.md", "CONTRIBUTING.md", "manifest.json", "package.json", "README.md", "LICENSE"]);
 function excluded(path) {
   const name = path.split("/").at(-1);
   return excludedNames.has(name) || name.startsWith(".env") || name.startsWith(".pnp.") ||

@@ -1,55 +1,106 @@
-# Usage Prompts
+# Exemplos de uso
 
-Use these examples in an MCP-capable client after configuring the Leads2b server.
+Use estes prompts em um cliente MCP com o servidor configurado. IDs, nomes e datas dos exemplos são fictícios; substitua-os pelos valores do registro desejado. Os exemplos de escrita exigem `LEADS2B_WRITE_MODE=preview` e não enviam alterações.
 
-## Health Check
+## Conferir a conexão
 
-```txt
-Call `leads2b_health_check` and summarize which APIs are configured, which APIs responded, and which tools are available.
+```text
+Execute leads2b_health_check. Resuma os endpoints testados, o contexto de usuário
+v1 e o modo de escrita. Distinga ferramentas registradas de permissões verificadas.
+Não exiba tokens.
 ```
 
-## Find a Customer
+## Buscar clientes
 
-```txt
-Use `leads2b_search_customers` to search for `lead@example.com`. If no result appears, use `leads2b_find_customer` with `summaryOnly=true`.
+```text
+Use leads2b_search_customers com search="lead@example.com" e limit=25.
+Informe os resultados e a cobertura retornada. Se não houver resultado,
+consulte leads2b_find_customer com search="lead@example.com" e summaryOnly=true.
 ```
 
-## Diagnose Attribution
+## Ler campos personalizados
 
-```txt
-Find the customer matching `lead@example.com`, then run `leads2b_diagnose_customer_attribution` for `LEAD` and `OPPORTUNITY`. Explain first touch, last touch, and divergences.
+```text
+Use leads2b_get_record_detail com entity="OPPORTUNITY", id=123,
+includeAttribution=false e includeRaw=true. Mostre os campos personalizados
+retornados, distinguindo valores ausentes de zero e null.
 ```
 
-## Calendar and Activity Review
+## Diagnosticar atribuição
 
-```txt
-Use `leads2b_list_calendar_events` for the current week with calendars `["leads2b"]` and types `["action", "meet"]`. Group the returned events by type and responsible user.
+```text
+Busque lead@example.com com leads2b_find_records. Identifique o ID e a entidade
+corretos antes de chamar leads2b_diagnose_attribution. Explique first touch,
+last touch e divergências usando somente os eventos retornados.
 ```
 
-## Deals by Pipeline
+## Consultar agenda
 
-```txt
-Use `leads2b_list_pipelines_by_entity` for `OPPORTUNITY`, identify the relevant pipeline ID, then call `leads2b_count_deals` for status `lost`.
+```text
+Use leads2b_list_calendar_events para a semana desejada, com início e fim
+explícitos, calendars=["leads2b"] e types=["action", "meet"]. Agrupe os eventos
+por tipo e responsável.
 ```
 
-## Receita/CNPJ Lookup
+## Contar negócios
 
-```txt
-Use `leads2b_get_receita_by_cnpj` with a sanitized or user-provided CNPJ, then summarize company registration fields returned by the account.
+```text
+Use leads2b_list_pipelines_by_entity com entity="OPPORTUNITY". Identifique
+o pipeline desejado e chame leads2b_count_deals com pipelineId e status="lost".
+Informe eventuais erros sem atribuir causas que o retorno não demonstre.
 ```
 
-## Customer Update Preview
+## Planejar atualização de customer
 
-Requires `LEADS2B_WRITE_MODE=preview`.
+Ferramenta `leads2b_update_customer`:
 
-```txt
-Call `leads2b_update_customer` with `id=123` and `fields={"name":"Example"}`. Show the planned request and confirm that no live change was sent.
+```json
+{"id":123,"fields":{"name":"Example"}}
 ```
 
-## Raw API Probe
+## Planejar ganho de oportunidade
 
-Requires `LEADS2B_ENABLE_RAW_API=true`.
+Ferramenta `leads2b_win_opportunity`:
 
-```txt
-Call `leads2b_api_request` with `api="v2"`, `method="OPTIONS"` and `path="/customer"`. Summarize the status without exposing tokens.
+```json
+{"id":123}
+```
+
+Em `live`, ganho e perda exigem `confirm_destructive=true`.
+
+## Planejar perda com motivo
+
+Consulte `leads2b_list_loss_reasons` para identificar o motivo. Ferramenta `leads2b_lose_opportunity`:
+
+```json
+{"id":123,"id_loss":2,"loss_reason":"Example reason"}
+```
+
+## Planejar anotação
+
+Ferramenta `leads2b_create_note`:
+
+```json
+{"entity":"OPPORTUNITY","id":123,"message":"Example note"}
+```
+
+O responsável pela anotação é o usuário autenticado na execução.
+
+## Planejar atividade
+
+Consulte `leads2b_list_team_users` e `leads2b_list_actions` para os IDs. Datas usam o horário da conta, no formato `YYYY-MM-DD HH:mm:ss`. Ferramenta `leads2b_create_activity`:
+
+```json
+{"entity":"OPPORTUNITY","id":123,"message":"Example activity","receiver":7,"action":2,"data":"2026-10-06 14:00:00","final_date":"2026-10-06 14:30:00"}
+```
+
+Registrar atividade no histórico não envia convite ou mensagem nem marca a atividade como concluída.
+
+## Consultar a API avançada
+
+Exige `LEADS2B_ENABLE_RAW_API=true`. Não é necessário habilitar esse recurso para usar as ferramentas dedicadas.
+
+```text
+Chame leads2b_api_request com api="v2", method="OPTIONS" e path="/customer".
+Resuma o status sem exibir tokens.
 ```

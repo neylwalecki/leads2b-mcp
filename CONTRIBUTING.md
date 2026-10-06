@@ -1,43 +1,51 @@
-# Contributing
+# Contribuição
 
-Thanks for considering a contribution.
+Relatos de problemas, melhorias de documentação e pull requests são bem-vindos.
 
-## Local Setup
+## Ambiente de desenvolvimento
 
-```bash
-npm install
+Requer Node.js 22 ou superior e npm.
+
+```sh
+npm ci
 npm test
 npm run typecheck
 npm run build
 ```
 
-## Data Hygiene
+Testes padrão usam mocks e fixtures sanitizadas. Não exigem tokens nem acesso a uma conta Leads2b. Testes de integração somente leitura são opt-in; não adicione testes padrão que alterem contas reais.
 
-Do not include real Leads2b tokens, authorization headers, account data, lead data, customer data, or raw API dumps.
+## Relatar um problema
 
-Use placeholders such as:
+Abra uma [issue](https://github.com/neylwalecki/leads2b-mcp/issues) com versão ou commit, versão do Node, cliente MCP, sistema operacional, passos de reprodução, ferramenta chamada e entrada/saída sanitizadas. Descreva o resultado esperado e o observado.
 
-- `<TOKEN>`
-- `lead@example.com`
-- `example.com`
-- Fictitious IDs and phone numbers.
+Não inclua tokens, cabeçalhos de autorização, nomes de clientes, e-mails, telefones, capturas ou dumps reais de API. Use `<TOKEN>`, `lead@example.com`, `example.com`, IDs e telefones fictícios.
 
-## Endpoint Changes
+## Alterar ferramentas ou endpoints
 
-When adding endpoints:
+- Mantenha os clientes das APIs v1 e v2 separados.
+- Documente métodos, endpoints, campos obrigatórios e estabilidade do contrato.
+- Marque contratos internos não documentados como `observed` ou `experimental`.
+- Adicione testes com fixtures sanitizadas e sem chamadas externas.
+- Preserve campos brutos de atribuição e informe cobertura parcial explicitamente.
+- Atualize a referência de ferramentas, os exemplos e a seção `Unreleased` do changelog quando o comportamento mudar.
 
-- Keep API v1 and API v2 clients separate.
-- Mark undocumented contracts as `observed` or `experimental`.
-- Add tests without external calls.
-- Add opt-in integration coverage only when the call is read-only or preview-only.
-- Never add default tests that mutate a real Leads2b account.
+## Ferramentas de escrita
 
-## Write Tools
+Toda mutação deve respeitar `LEADS2B_WRITE_MODE`:
 
-Write behavior must be explicit in configuration:
+- `disabled`: não registrar ferramentas de escrita.
+- `preview`: retornar o plano, sem chamadas de escrita ou autenticação para executar a operação.
+- `live`: permitir criação e atualização simples conforme permissões da conta.
 
-- `disabled`: no write tools.
-- `preview`: write tools return the planned request.
-- `live`: simple creates and updates may execute directly.
+Exclusões e ganho/perda exigem confirmação extra. Operações em lote, merges ou novas operações destrutivas precisam de proteção explícita. Não faça retry automático de mutações. Distingua solicitação aceita, persistência observada e resultado incerto; preserve evidências de releitura após falhas ambíguas.
 
-Deletes and bulk writes need stronger confirmation and a recovery plan.
+## Verificar uma contribuição
+
+Execute testes relevantes e `npm run typecheck`. Para mudanças de runtime, rode também `npm run build`. Mudanças de dependências, manifesto ou empacotamento exigem `npm audit`, `npm run package:mcpb` e `npm run verify:mcpb`. O empacotador não sobrescreve arquivos existentes em `artifacts/`.
+
+Documentação deve usar exemplos executáveis, links válidos e descrições do comportamento do produto. Compartilhe somente material sanitizado.
+
+## Licença
+
+Contribuições são disponibilizadas sob a [licença MIT](LICENSE) do projeto. Preserve os avisos de licença de arquivos de terceiros.

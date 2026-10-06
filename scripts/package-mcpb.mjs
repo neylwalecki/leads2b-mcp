@@ -23,7 +23,7 @@ export async function packageMcpb(root = resolve(dirname(fileURLToPath(import.me
   const temporary = `${output}.${randomUUID()}.tmp`;
   try {
     // Explicit allowlist: no account data, research, Git history or devDependencies.
-    for (const name of ["dist", "docs", "examples", "CHANGELOG.md", "manifest.json", "README.md", "LICENSE", "package.json", "package-lock.json"])
+    for (const name of ["dist", "docs", "examples", "CHANGELOG.md", "CONTRIBUTING.md", "manifest.json", "README.md", "LICENSE", "package.json", "package-lock.json"])
       await cp(join(root, name), join(stage, name), { recursive: true, verbatimSymlinks: true });
     // Root ignore files were never staged by the old script. Reject their introduction.
     try {

@@ -19,11 +19,12 @@ const decoder = new TextDecoder();
 for (const name of names) {
   assert(!name.startsWith("/") && !name.includes("\\") && !name.includes(":"), `Unsafe archive path: ${name}`);
   assert(!name.split("/").includes(".."), `Archive traversal: ${name}`);
-  assert(/^(dist\/|docs\/|examples\/|CHANGELOG\.md$|node_modules\/|manifest\.json$|package\.json$|README\.md$|LICENSE$)/.test(name), `Unexpected artifact file: ${name}`);
+  assert(/^(dist\/|docs\/|examples\/|CHANGELOG\.md$|CONTRIBUTING\.md$|node_modules\/|manifest\.json$|package\.json$|README\.md$|LICENSE$)/.test(name), `Unexpected artifact file: ${name}`);
   assert(!/(^|\/)(\.env(?:\..*)?|\.git|\.internal|research)(\/|$)/.test(name), `Private file in artifact: ${name}`);
   assert(!name.startsWith("node_modules/@anthropic-ai/") && !name.startsWith("node_modules/typescript/"), "Development dependency in artifact");
 }
 assert(files["dist/index.js"] && files["manifest.json"] && files["node_modules/@modelcontextprotocol/sdk/package.json"]);
+assert(files["CONTRIBUTING.md"], "Missing contribution guide linked by documentation");
 const manifest = JSON.parse(decoder.decode(files["manifest.json"]));
 assert.equal(manifest.version, pkg.version);
 assert.equal(manifest.user_config.write_mode.default, "disabled");

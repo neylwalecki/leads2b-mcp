@@ -1,84 +1,59 @@
 # Leads2b MCP
 
-Servidor MCP independente para consultar dados, investigar atribuição e operar o CRUD básico da Leads2b. Usa `stdio`, TypeScript e o SDK oficial do MCP. Não é afiliado à Leads2b.
+Servidor [Model Context Protocol](https://modelcontextprotocol.io/) para consultar dados, investigar atribuição e executar operações na Leads2b. Implementado em TypeScript, com o SDK oficial do MCP e transporte `stdio`.
 
-## O que faz
+Projeto independente, sem afiliação à Leads2b. Licença [MIT](LICENSE).
 
-| Área | Ações |
+## Funcionalidades
+
+| Área | Recursos |
 |---|---|
-| Empresas e pessoas (`CUSTOMER`) | Listar, buscar, detalhar, criar, editar e excluir |
-| Contatos | Listar por customer, detalhar, criar, editar e excluir |
-| Leads e oportunidades | Buscar, detalhar, criar, editar e excluir; ganho/perda de oportunidade e histórico experimentais |
-| Operação diária | Coleta paginada, candidatos, datas, campos comerciais e avisos de cobertura |
-| Atribuição | Conversões, tracking, first/last touch observados, UTMs e divergências |
-| Catálogos | Equipe, pipelines, etapas, origens, campos, tags, campanhas e fluxos |
-| Agenda, snippet e webhooks | Consultar; sem ferramentas de envio ou publicação |
+| Empresas e pessoas | Listagem, busca, detalhe e CRUD de `CUSTOMER` |
+| Contatos | Listagem por customer, detalhe e CRUD |
+| Leads e oportunidades | Busca, detalhe, CRUD e alteração de funil, etapa e responsável |
+| Oportunidades e histórico | Ganho, perda com motivo, anotações e atividades; contratos experimentais |
+| Operação de leads | Coleta paginada, filtros, candidatos e cobertura explícita |
+| Atribuição | Conversões, tracking, UTMs, first/last touch observados e divergências |
+| Catálogos | Equipe, pipelines, etapas, origens, campos, tags e motivos de perda |
+| Agenda e integrações | Consulta de calendário, snippet e webhooks |
 
-As escritas são opt-in. Os contratos internos são instáveis e dependem de permissões e regras da conta. Consulte [ferramentas e limites](docs/MCP-TOOLS.md) e [evidência dos endpoints](docs/API-ENDPOINTS.md).
+Escritas são desativadas por padrão. Consulte a [referência de ferramentas](docs/MCP-TOOLS.md) para schemas, requisitos e limites de cada operação.
 
-## Escolha seu cliente
+## Instalação
 
-| Cliente | Instalação |
-|---|---|
-| Claude Desktop | Pacote `.mcpb`; instruções abaixo |
-| Codex app | [Configuração local com Node e `config.toml`](docs/CHATGPT-CODEX.md) |
-| ChatGPT desktop com MCP local | [Adicionar um servidor STDIO](docs/CHATGPT-CODEX.md#chatgpt-desktop-interface-de-mcp-local) |
+### Claude Desktop
 
-## Claude Desktop no Windows ou macOS
+1. Baixe um arquivo `.mcpb` na página de [releases](https://github.com/neylwalecki/leads2b-mcp/releases). Para uma versão ainda não distribuída, [compile o pacote](#desenvolvimento).
+2. Em **Settings > Extensions > Advanced settings > Install Extension…**, selecione o arquivo.
+3. Preencha **Token API v1** e **Token API v2** com credenciais da mesma conta. O [guia de tokens](docs/API-TOKENS.md) explica como obtê-las.
+4. Mantenha o modo de escrita em `disabled` para começar.
 
-O arquivo `leads2b-mcp-0.4.2.mcpb` inclui o servidor e suas dependências de produção. O Claude Desktop fornece o runtime Node; quem instala a extensão não precisa de Git, terminal ou npm.
+O pacote inclui o servidor e as dependências de produção. O Claude Desktop fornece o runtime Node; a instalação da extensão dispensa Git e npm. Tokens são marcados como sensíveis no manifesto. Disponibilidade de extensões e armazenamento das credenciais dependem do cliente e das políticas da organização. Consulte as [instruções oficiais do Claude](https://support.claude.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop).
 
-1. Obtenha o arquivo `leads2b-mcp-0.4.2.mcpb`. Para gerar o pacote a partir do código-fonte, veja a seção de desenvolvimento abaixo.
-2. No Claude Desktop, abra **Settings > Extensions > Advanced settings > Install Extension…** e selecione o arquivo.
-3. [Obtenha os tokens na Leads2b](docs/API-TOKENS.md) e preencha os campos **Token API v1** e **Token API v2** com credenciais da mesma conta. Comece com `write_mode=disabled`.
-4. Peça: “Execute `leads2b_health_check` e informe autenticação, contexto de usuário e restrições, sem exibir tokens”.
-5. Teste uma consulta conhecida. Um health check positivo não comprova permissão em todos os endpoints.
+### Clientes com suporte a STDIO
 
-Os campos dos tokens são sensíveis no manifesto e usam o armazenamento protegido do sistema oferecido pelo Claude. Extensões privadas precisam ser atualizadas instalando o novo arquivo. A instalação pode depender da política da organização. [Instruções oficiais do Claude](https://support.claude.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop).
-
-## Como obter os tokens
-
-Na Leads2b, abra **Configurações > Integrações**. A seção **Integração da Leads2b (via API)** permite copiar a chave de empresa; a seção de **API V2, chave por usuário** permite gerar ou copiar a chave do usuário. O [guia de tokens](docs/API-TOKENS.md) mostra o passo a passo, os campos correspondentes no MCP e como validar o acesso.
-
-## Modos de escrita
-
-Uma chave v1 de empresa pode permitir consultas e CRUD de customers/contatos, mas não fornecer contexto de usuário para negócios. Para CRUD de leads/oportunidades, `LEADS2B_API_V1_TOKEN` deve autenticar um usuário autorizado. Confira `apis.v1.userContext` no health check. O MCP não troca tokens entre APIs automaticamente.
-
-Use credenciais obtidas pelo responsável da conta, respeitando seu escopo. Tokens de usuário podem expirar; renove-os nas configurações da extensão. Não envie tokens em chats, issues ou arquivos públicos.
-
-| Modo | Comportamento |
-|---|---|
-| `disabled` | Somente leitura; ferramentas de escrita não são registradas |
-| `preview` | Mostra o método, endpoint e payload, sem enviar alterações |
-| `live` | Envia criação/edição; exclusão exige `confirm_destructive=true` |
-
-O cliente MCP pode solicitar suas próprias aprovações. Escritas nunca recebem retry automático. Uma resposta HTTP 500 pode ocorrer **depois de a alteração persistir**; confira a releitura antes de repetir.
-
-## Desenvolvimento e instalação manual
-
-Requer Node.js 22 ou superior; use uma versão LTS compatível. Na pasta do checkout:
+Requer Git e Node.js 22 ou superior. Use uma versão LTS compatível.
 
 ```sh
+git clone https://github.com/neylwalecki/leads2b-mcp.git
+cd leads2b-mcp
 npm ci
-npm test
-npm run typecheck
 npm run build
-npm run package:mcpb
 ```
 
-O arquivo gerado fica em `artifacts/`. A CI executa testes, build, auditoria de dependências e verificação do pacote em Linux e Windows com Node 22 e 24.
+Para uma versão específica, selecione a tag ou branch desejada antes de executar `npm ci`. A documentação de cada checkout acompanha seu código; versões distribuídas estão em [Releases](https://github.com/neylwalecki/leads2b-mcp/releases).
 
-Para desenvolver com `.env`, copie `.env.example` para `.env` (`Copy-Item .env.example .env` no PowerShell). Alternativamente, passe os tokens pelo campo `env` do cliente MCP. Não dependa de `cwd` no arquivo do Claude:
+Configure o cliente para iniciar `node` com o caminho absoluto de `dist/index.js`. Exemplo no formato usado pelo Claude Desktop:
 
 ```json
 {
   "mcpServers": {
     "leads2b": {
-      "command": "C:\\Program Files\\nodejs\\node.exe",
-      "args": ["C:\\Tools\\leads2b-mcp\\dist\\index.js"],
+      "command": "node",
+      "args": ["/caminho/absoluto/leads2b-mcp/dist/index.js"],
       "env": {
-        "LEADS2B_API_V1_TOKEN": "<TOKEN>",
-        "LEADS2B_API_V2_TOKEN": "<TOKEN>",
+        "LEADS2B_API_V1_TOKEN": "<TOKEN_V1>",
+        "LEADS2B_API_V2_TOKEN": "<TOKEN_V2>",
         "LEADS2B_WRITE_MODE": "disabled",
         "LEADS2B_ENABLE_RAW_API": "false"
       }
@@ -87,30 +62,89 @@ Para desenvolver com `.env`, copie `.env.example` para `.env` (`Copy-Item .env.e
 }
 ```
 
-Adapte os caminhos reais e preserve outras entradas de `mcpServers`. Configuração manual guarda os valores no arquivo local; prefira a extensão para credenciais sensíveis.
+Substitua os caminhos e tokens. Se o cliente não encontrar Node, use o caminho absoluto do executável. No Windows, escape barras invertidas em JSON, por exemplo `C:\\Tools\\leads2b-mcp\\dist\\index.js`. O cliente inicia e encerra o processo; não é necessário manter `npm start` aberto.
 
-Testes padrão usam mocks e fixtures sanitizadas. Testes de integração **somente leitura** são opt-in com `RUN_LEADS2B_INTEGRATION_TESTS=true`. Testes de escrita real não fazem parte da suíte padrão.
+Para o Codex, veja o [guia de configuração](docs/CHATGPT-CODEX.md). Este servidor fornece somente STDIO; não inclui endpoint HTTP ou SSE para clientes que exigem conexão remota.
 
-## Interface para automações
+## Configuração
 
-Após instalar o pacote local, importe `leads2b-mcp/lead-ops`. Essa entrada exporta `scanLeadOps`, configuração, clientes e normalizadores com tipos; os caminhos legados `dist/*` continuam disponíveis. Veja [exemplo executável](examples/lead-ops.mjs). Nenhuma automação instalada é migrada automaticamente.
+Passe as variáveis pelo cliente MCP ou copie `.env.example` para `.env` na pasta do projeto. Arquivos de configuração com tokens devem permanecer fora do Git.
 
-`scanLeadOps` separa cobertura de coleta e paginação da saída. Preserva candidatos sem tracking, IDs técnicos e origem cadastral; não confunde ausência de tracking com ausência de lead nem cobertura parcial com zero resultados.
+| Variável | Finalidade | Padrão |
+|---|---|---|
+| `LEADS2B_API_V1_TOKEN` | Credencial da API interna v1 | Não configurado |
+| `LEADS2B_API_V2_TOKEN` | Credencial da API interna v2 | Não configurado |
+| `LEADS2B_WRITE_MODE` | `disabled`, `preview` ou `live` | `disabled` |
+| `LEADS2B_ENABLE_RAW_API` | Habilitar `leads2b_api_request` | `false` |
+| `LEADS2B_API_V1_BASE_URL` | Base da API interna v1 | `https://app.leads2b.com/api/v1` |
+| `LEADS2B_API_V2_BASE_URL` | Base da API interna v2 | `https://app.leads2b.com/api/v2` |
+| `LEADS2B_PUBLIC_WORKER_URL` | Base do snippet público | `https://js.app.leads2b.com` |
+
+CRUD de leads/oportunidades e operações de histórico exigem uma credencial v1 com contexto de usuário. Uma chave de empresa pode permitir consultas e operações de customers/contatos sem atender a esse requisito. Confira `apis.v1.userContext` no health check. O servidor não troca tokens entre APIs automaticamente.
+
+### Modos de escrita
+
+| Modo | Comportamento |
+|---|---|
+| `disabled` | Somente leitura; ferramentas de escrita não são registradas |
+| `preview` | Retorna método, endpoint e payload, sem enviar alterações |
+| `live` | Executa alterações; exclusão e ganho/perda exigem `confirm_destructive=true` |
+
+O cliente MCP pode solicitar aprovações próprias. Escritas não recebem retry automático. Se a API retornar erro depois do envio, confira a releitura antes de repetir: uma resposta HTTP 500 não comprova rollback.
+
+## Primeira consulta
+
+```text
+Execute leads2b_health_check. Informe os endpoints testados, o contexto de usuário
+e o modo de escrita, sem exibir tokens. Distinga ferramentas registradas de
+permissões verificadas.
+```
+
+O health check testa endpoints específicos. Um 403 em `/users` não comprova falha de toda a API v2. Em seguida, consulte um registro conhecido usando `leads2b_search_customers` ou `leads2b_find_records`. A busca v2 retorna até 25 registros por padrão; `returnAll=true` preserva a resposta integral. Veja outros [exemplos de uso](examples/usage-prompts.md).
+
+## Desenvolvimento
+
+Depois da instalação das dependências:
+
+```sh
+npm test
+npm run typecheck
+npm run build
+npm audit
+npm run package:mcpb
+npm run verify:mcpb
+```
+
+O pacote é gerado em `artifacts/leads2b-mcp-VERSAO.mcpb`. O empacotador recusa sobrescrever um arquivo existente; mova o pacote anterior se precisar gerar novamente a mesma versão. O verificador confere o manifesto e executa o servidor extraído em `disabled` e `preview`, sem tokens. Detalhes do formato estão em [dependências e empacotamento](docs/DEPENDENCY-AUDIT.md).
+
+Testes padrão usam mocks e fixtures sanitizadas. Integração somente leitura é opt-in com `RUN_LEADS2B_INTEGRATION_TESTS=true`. A CI está configurada para Linux e Windows com Node 22 e 24; os resultados das execuções estão em [Actions](https://github.com/neylwalecki/leads2b-mcp/actions).
+
+### Interface para automações
+
+Importe `leads2b-mcp/lead-ops` após instalar o pacote local. Essa entrada exporta `scanLeadOps`, configuração, clientes e normalizadores com tipos. Caminhos legados `dist/*` continuam disponíveis. Veja o [exemplo executável](examples/lead-ops.mjs).
+
+`scanLeadOps` distingue cobertura da coleta e paginação da saída. Registros sem tracking permanecem nos resultados, com IDs técnicos e origem cadastral preservados.
+
+## Limites
+
+- O servidor usa as APIs internas `app.leads2b.com/api/v1` e `/api/v2`. Elas diferem da API pública `api.leads2b.com/v2` e podem mudar sem aviso.
+- Ganho/perda de oportunidade, anotação e atividade são experimentais. Permissões e persistência dependem da API e das regras da conta. Registrar atividade não envia convite nem marca conclusão.
+- A paginação da busca de customers é local: limita a saída, mas não reduz a transferência da resposta original.
+- Merges, importações em lote, ganho/perda de lead e conversões artificiais não têm ferramentas dedicadas. Consulte a [cobertura](docs/ROADMAP.md).
+- Consultas brutas preservam os dados da conta autenticada. Restrinja o acesso ao cliente MCP e compartilhe somente exemplos sanitizados.
+- O pacote MCPB não é assinado. Não há verificação automática da identidade do distribuidor.
 
 ## Documentação
 
-- [Ferramentas, schemas e CRUD](docs/MCP-TOOLS.md)
-- [Instalação no Codex app e no ChatGPT desktop](docs/CHATGPT-CODEX.md)
-- [Como obter e configurar os tokens](docs/API-TOKENS.md)
-- [Endpoints, autenticação e validação](docs/API-ENDPOINTS.md)
+- [Ferramentas, schemas e resultados](docs/MCP-TOOLS.md)
+- [Tokens e autenticação](docs/API-TOKENS.md)
+- [Configuração no Codex e transporte no ChatGPT](docs/CHATGPT-CODEX.md)
+- [Endpoints e estabilidade](docs/API-ENDPOINTS.md)
 - [Atribuição e origem](docs/ATRIBUICAO-E-ORIGEM.md)
-- [Prompts de uso](examples/usage-prompts.md)
+- [Dependências e empacotamento](docs/DEPENDENCY-AUDIT.md)
+- [Cobertura e evolução](docs/ROADMAP.md)
 - [Changelog](CHANGELOG.md)
 
-## Limites conhecidos
+## Contribuição
 
-Os endpoints internos `app.leads2b.com/api/v1` e `/api/v2` são diferentes da API pública `api.leads2b.com/v2`. O MCP não promete cobrir toda a plataforma. Ganho/perda de oportunidade, anotação e atividade possuem ferramentas experimentais baseadas no frontend público, sem validação live. Ganho/perda exigem confirmação extra. Merges, operações em lote e conversões artificiais não possuem ferramentas específicas. A API avançada é opt-in e não torna um contrato desconhecido confiável.
-
-O servidor retorna os dados da conta autenticada integralmente nas consultas brutas. Restrinja o acesso ao cliente MCP e compartilhe somente exemplos sanitizados. O pacote é construído por lista explícita de arquivos, sem `.env`, pesquisas privadas ou histórico Git.
-
-O empacotador gera ZIP com fflate e valida o manifesto 0.3 por schema oficial congelado. `npm run package:mcpb` recusa sobrescrever um candidato existente; preserve ou mova o arquivo anterior antes de gerar novamente a mesma versão. O pacote é não assinado. Detalhes de dependências e proveniência: [audit](docs/DEPENDENCY-AUDIT.md).
+Sugestões e relatos de problemas são bem-vindos em [Issues](https://github.com/neylwalecki/leads2b-mcp/issues). Para alterações de código, leia [CONTRIBUTING.md](CONTRIBUTING.md). Nunca inclua tokens ou dados reais de clientes em exemplos, logs ou pull requests.

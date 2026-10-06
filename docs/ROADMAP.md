@@ -1,7 +1,26 @@
-# Estado e evolução
+# Cobertura e evolução
 
-Funcionalidades e limites atuais estão em [MCP-TOOLS.md](MCP-TOOLS.md). Mudanças por versão estão no [changelog](../CHANGELOG.md).
+O servidor concentra-se em consultas, atribuição e operações de CRM com schemas explícitos. A [referência de ferramentas](MCP-TOOLS.md) descreve o comportamento implementado; o [changelog](../CHANGELOG.md) registra mudanças e migrações.
 
-Pendências de distribuição do candidato 0.3.0: executar CI remota, homologar instalação/consulta no Claude Desktop Windows e aprovar a release. Uma matriz configurada não comprova execução nem homologação.
+## Cobertura atual
 
-Possibilidades futuras: filtros remotos comprovados, coleta global de contatos, atividades e operações em lote com contratos específicos. Não estão implementadas.
+- Consultas e CRUD de customers, contatos, leads e oportunidades.
+- Coleta paginada de negócios, filtros locais e cobertura da saída.
+- Normalização de origem e diagnóstico de atribuição.
+- Health check com catálogo, endpoints testados e requisitos de escrita separados.
+- Ganho/perda de oportunidades, anotações e atividades com contratos experimentais.
+- Campos personalizados preservados nos detalhes quando retornados pela API.
+- Distribuição por MCPB e instalação manual em clientes STDIO.
+
+## Áreas para contribuição
+
+| Área | Limite atual |
+|---|---|
+| Paginação remota de customers | A saída usa recorte local; a semântica remota precisa de validação |
+| Contatos | Há detalhe e listagem por customer; não há busca global dedicada |
+| Histórico | Há criação de anotações/atividades e releitura limitada; não há conclusão de atividade ou envio de convite |
+| Encerramento de leads | Ganho/perda estão implementados somente para oportunidades |
+| Operações em lote e merges | Não há ferramentas dedicadas |
+| Transporte remoto | O servidor oferece somente STDIO |
+
+Essas áreas não representam compromisso de prazo ou implementação. Propostas devem incluir o contrato da API, exemplos sanitizados e testes sem alterações em contas reais. Consulte o [guia de contribuição](../CONTRIBUTING.md).

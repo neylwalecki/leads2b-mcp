@@ -1,4 +1,4 @@
-# Atribuição e Origem
+# Atribuição e origem
 
 O MCP separa origem cadastral, evidência bruta e classificação resumida da Leads2b.
 
@@ -17,15 +17,17 @@ No diagnóstico local, UTMs, click IDs e referrer têm prioridade sobre campos r
 Ordem geral:
 
 1. `gclid`/`g_clid` -> `paid_search`.
-2. `fbclid`/`fb_clid` com sinal social -> `paid_social`.
+2. `fbclid`/`fb_clid` -> `paid_social`.
 3. Domínios de IA/LLM -> `ai_referral`.
 4. `utm_medium` pago -> mídia paga.
 5. `utm_medium` orgânico -> orgânico.
 6. Referrer ou `utm_source` externo -> referral.
-7. Sem sinal de origem -> direct.
-8. Sinais conflitantes -> baixa confiança e evidências listadas.
+7. Sem sinal de origem e sem host -> `unknown`, com confiança baixa.
+8. Host presente sem UTM, click ID ou referrer externo -> `direct`, com confiança baixa.
 
-Fontes de IA mapeadas inicialmente:
+Divergências com `lead_origin` são informadas separadamente; não alteram automaticamente o canal nem a confiança.
+
+Fontes de IA reconhecidas:
 
 - `chatgpt.com`
 - `chat.openai.com`
@@ -35,7 +37,7 @@ Fontes de IA mapeadas inicialmente:
 - `copilot.microsoft.com`
 - `poe.com`
 
-## First Touch e Last Touch
+## First touch e last touch
 
 O MCP calcula:
 
@@ -48,7 +50,7 @@ O MCP calcula:
 
 O termo “observado” é intencional: o cálculo usa apenas eventos retornados pela API.
 
-## Campos Úteis em Relatórios
+## Campos úteis em relatórios
 
 - Origem cadastral.
 - `lead_origin`.

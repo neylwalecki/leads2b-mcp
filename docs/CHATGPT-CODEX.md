@@ -1,22 +1,19 @@
-# Usar no Codex app e no ChatGPT desktop
+# Configuração no Codex e no ChatGPT
 
-| Cliente | Conexão |
-|---|---|
-| Codex app | Servidor local via `stdio`, configurado em `config.toml` |
-| ChatGPT desktop com a opção **MCP servers** | Servidor local via `stdio` nas configurações do app |
-
-O arquivo `.mcpb` é o instalador para Claude Desktop. Para configurar diretamente o MCP no Codex, use o comando Node descrito abaixo.
+O servidor usa transporte STDIO. O Codex pode iniciar o processo local; o pacote `.mcpb` destina-se ao Claude Desktop.
 
 ## Preparar o servidor local
 
 Instale Git e Node.js 22 ou superior. Em uma pasta de sua escolha, execute:
 
 ```sh
-git clone --branch v0.3.0 https://github.com/neylwalecki/leads2b-mcp.git
+git clone https://github.com/neylwalecki/leads2b-mcp.git
 cd leads2b-mcp
-npm ci --ignore-scripts
+npm ci
 npm run build
 ```
+
+Para uma versão distribuída específica, selecione a tag desejada antes de instalar as dependências; consulte [Releases](https://github.com/neylwalecki/leads2b-mcp/releases).
 
 Mantenha essa pasta no computador que executará o MCP. O ponto de entrada é `dist/index.js`. Não é necessário manter `npm start` aberto: o cliente inicia o processo.
 
@@ -68,17 +65,9 @@ Reinicie o servidor MCP pela interface, quando disponível, ou reabra o Codex ap
 
 Os tokens ficam no arquivo local de configuração. Não grave esse bloco com credenciais em um repositório nem o compartilhe. Se já existir uma conexão Leads2b direta ou por proxy, atualize a entrada existente para evitar duplicatas.
 
-## ChatGPT desktop: interface de MCP local
+## ChatGPT
 
-Se o aplicativo oferecer **Settings > MCP servers**:
-
-1. Selecione **Add server** e dê o nome `leads2b`.
-2. Escolha **STDIO**.
-3. Informe o executável Node em **Command**, o caminho absoluto de `dist/index.js` em **Arguments** e as quatro variáveis de ambiente dos exemplos acima.
-4. Salve e selecione **Restart**.
-5. Confira a conexão pelo comando `/mcp` no compositor.
-
-Esse fluxo usa a configuração MCP do host Codex. Se a opção não estiver disponível no seu aplicativo, use o Codex app; enviar o `.mcpb` como anexo de conversa não instala o servidor.
+O ChatGPT conecta-se a servidores MCP remotos, não diretamente a processos STDIO locais. Este projeto não fornece endpoint HTTP/SSE nem adaptador remoto. A configuração `config.toml` acima pertence ao Codex e não instala um conector no ChatGPT. Consulte os [requisitos oficiais de MCP no ChatGPT](https://help.openai.com/en/articles/12584461-developer-mode-and-full-mcp-connectors-in-chatgpt) para integrações remotas.
 
 ## Conferir a conexão
 
@@ -86,7 +75,7 @@ Peça ao assistente:
 
 > Execute `leads2b_health_check` e informe autenticação, contexto de usuário e restrições, sem exibir tokens. Depois execute `leads2b_normalize_source` com `utm_source` igual a `chatgpt.com` e `host` igual a `example.com`.
 
-A normalização é local. O health check verifica os acessos configurados; depois faça uma consulta conhecida da sua conta. Comece em `disabled`; `preview` permite inspecionar operações sem alterar registros. `live` habilita alterações reais, respeitando as aprovações do cliente.
+A normalização é local. O health check informa os resultados dos endpoints testados; não comprova permissão em toda a API. Depois faça uma consulta conhecida da sua conta. Comece em `disabled`; `preview` permite inspecionar operações sem alterar registros. `live` habilita alterações reais, respeitando as aprovações do cliente.
 
 Se o servidor não iniciar, confira o caminho do Node, a existência de `dist/index.js`, as dependências instaladas e os logs de inicialização. Um cadastro visível no CLI não prova que o processo conectou no app.
 

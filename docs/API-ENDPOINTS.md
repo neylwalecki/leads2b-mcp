@@ -1,8 +1,8 @@
 # Endpoints
 
-Resumo dos endpoints usados ou observados pelo MCP. Revisão: 2026-09-08.
+Referência dos endpoints utilizados pelo MCP. As tabelas de leitura refletem observações de 08/09/2026; operações experimentais foram adicionadas em 05/10/2026.
 
-Os status legados abaixo são registros de probes do projeto, não garantia permanente de disponibilidade. HTTP 200 e lista vazia não comprovam contexto de usuário nem escopo completo. A validação de escrita tem seu próprio quadro ao final.
+Status indica a evidência técnica disponível, não uma garantia de acesso em toda conta. HTTP 200 e lista vazia não comprovam contexto de usuário nem cobertura completa.
 
 Status:
 
@@ -108,25 +108,17 @@ Rotas identificadas no [aplicativo público da Leads2b](https://app.leads2b.com/
 
 Listagens complementares: `GET /customer/contact/{customerId}`, `GET /user/all` e `GET /pipeline/pipeline_items/{pipelineId}`. Para editar negócio, o corpo é `{deal: {id, type: "LEAD" | "OPPORTUNITY"}, edit_data: fields}`.
 
-### Teste controlado em 2026-09-08
+### Comportamentos de escrita
 
-Foram criados registros temporários, alterados campos básicos e conferidas as releituras. Todos os registros criados no teste foram excluídos e a exclusão foi relida. O cadastro preexistente usado como controle foi preservado. Dados e recibos reais ficam fora do repositório público.
-
-| Operação | Evidência e limite |
-|---|---|
-| Customer (`PERSON`) | Criação, leitura, edição de nome e exclusão confirmadas. `ORGANIZATION` usa o mesmo endpoint, com schema próprio; não houve teste real desse tipo. |
-| Contato | Criação com vínculo a customer, leitura, edição de nome sem perder e-mail e exclusão confirmadas. |
-| Lead | Criação com token de usuário, leitura, edição de título/e-mail e exclusão confirmadas. O campo de criação é `email_contact`; tentativa duplicada foi rejeitada com `email_already_used`. |
-| Oportunidade | Criação, leitura e exclusão confirmadas. Edição de título persistiu, mas a API retornou HTTP 500; uma resposta de erro não comprova rollback. |
-| Token de empresa | Não retornou usuário em `/user/logged/`; criação de negócios falhou com HTTP 500. O mesmo cadastro foi acessível com token de usuário autorizado, que permitiu criar os negócios. |
-
-A 0.3.0 verifica contexto de usuário antes do CRUD de negócios. Após erro de escrita com ID conhecido, tenta uma releitura e expõe o resultado sem declarar sucesso da chamada. Não faz retry de mutações.
-
-`PUT /lead/edit_lead/{id}` foi observado no frontend, mas não persistiu o título no teste. `PUT /opportunity/edit_opportunity/{id}` retornou erro. Por isso, os tools usam o contrato observado de `PUT /deal/index` para edição. As rotas presumidas de escrita v2 da versão anterior foram removidas.
+- CRUD de negócios exige token v1 com contexto de usuário; a verificação ocorre antes de enviar alterações em `live`.
+- A conta pode exigir campos adicionais. Customer aceita `PERSON` ou `ORGANIZATION`; os requisitos de cada tipo continuam sujeitos à API.
+- Criação de lead usa `email_contact`; duplicatas podem retornar `email_already_used`.
+- Uma atualização de oportunidade pode persistir mesmo quando a API retorna HTTP 500. Após erro com ID conhecido, o servidor tenta uma releitura e não repete a mutação automaticamente.
+- A edição de leads/oportunidades usa `PUT /deal/index`; as rotas antigas de edição não persistiram todos os campos nos testes.
 
 ### Datas observadas
 
-Comparando horário de envio do teste com a resposta, a v1 devolveu horário UTC-03 sem offset. O detalhe de customer v2 devolveu o mesmo horário com `Z`, três horas antes do instante real quando interpretado literalmente. É uma inconsistência do fornecedor, não do fuso do Windows. Datas brutas são preservadas; a coleta permite correção explícita de interpretação com `apiTimestampOffset` após validação da conta. Isso não prova a mesma semântica em conversões/tracking ou em todo endpoint v2.
+Comparando horário de envio do teste com a resposta, a v1 devolveu horário UTC-03 sem offset. O detalhe de customer v2 devolveu o mesmo horário com `Z`, três horas antes do instante real quando interpretado literalmente. Os dois retornos têm semânticas de fuso distintas. Datas brutas são preservadas; a coleta permite correção explícita de interpretação com `apiTimestampOffset` após validação da conta. Isso não prova a mesma semântica em conversões/tracking ou em todo endpoint v2.
 
 ### API pública separada
 
@@ -134,7 +126,7 @@ A [referência OpenAPI](https://developers.leads2b.dev/api/openapi) consultada l
 
 `GET /deals` foi validado com `limit/offset` em páginas distintas. O parâmetro `search` foi ignorado no teste; o MCP aplica critérios locais sobre os registros coletados. A coleta detecta limites, páginas repetidas e mudanças de totais. Mesmo completa para a janela solicitada, não é snapshot atômico.
 
-## Snippet Público
+## Snippet público
 
 Base: `https://js.app.leads2b.com`
 
@@ -147,7 +139,7 @@ Base: `https://js.app.leads2b.com`
 
 O MCP consulta e diagnostica o snippet. Ele não dispara conversões reais por padrão.
 
-## Contratos experimentais observados em 05/10/2026
+## Operações experimentais
 
 Fontes: [aplicativo público](https://app.leads2b.com/), [common-DbozlP4W.js](https://app.leads2b.com/common-DbozlP4W.js) e [deals-ClsvYcLi.js](https://app.leads2b.com/deals-ClsvYcLi.js). Inspeção estática de arquivos públicos, sem sessão, tokens ou chamadas autenticadas. URLs com hash podem deixar de existir; os fingerprints identificam o conteúdo observado.
 
@@ -156,18 +148,19 @@ Fontes: [aplicativo público](https://app.leads2b.com/), [common-DbozlP4W.js](ht
 | `common-DbozlP4W.js` | `2c3d64c9a13f25a7a9c38e010e25b9a19c87b74a69e4d8f089a39c57dead125d` |
 | `deals-ClsvYcLi.js` | `bbfc97b11793591f12cc2d3a95285ab83a13ee31651a87f1b6b30f933f503edc` |
 
-O cliente `E` do frontend aponta à API interna v1. Os contratos observados são instáveis e não comprovam persistência nem permissões com tokens do MCP.
+As operações abaixo usam a API interna v1. Os contratos observados são instáveis e não comprovam persistência nem permissões com tokens do MCP.
 
-| Operação | Evidência no frontend | Implementação e limite |
+| Operação | Método e endpoint v1 | Contrato e limite |
 |---|---|---|
-| Ganho | `$We`, exportado como `cr`, chamado como `Cn` no modal; `PUT opportunity/winOpportunity/{id}`. | Payload do modal: `cloneOpportunity=NOT_CLONE`, `createAfterSale=false` como string, `afterSalePipeline/idRouter/idUser=null`. Não oferece clonagem, roteamento ou pós-venda. |
-| Perda | `ST` com `type=OPPORTUNITY`; `PUT opportunity/opportunityLost`. | `id_opportunity`, `id_loss`, `exclusion_reason`; `cloning_opportunity`, `finishWorkflowInstances` e `reactivate_lead` falsos. |
-| Anotação | `qb`, exportado como `dH`; `POST history/index/` com formulário no envelope `data`. Formulário/comentários usam `option=comment`, `message`, `receiver`, entidade e ID. | Receiver restrito ao usuário autenticado, sem menções, anexos ou notificações adicionais por ferramenta. Efeitos internos do fornecedor seguem suas regras. |
-| Atividade | Formulário chama `qb` com `option=action`, `receiver`, `action`, `data`, `final_date`, `message`, `id_pipeline_item`. | Insere no histórico; não cria evento de calendário, convite, envio de mensagem ou marca conclusão. |
-| Histórico | `ci`: `GET history/index/` com `entity`, `id_entity`, `limit`, `offset`. | Releitura de até 25 registros após as novas operações. Não é prova automática de persistência. |
-| Campos personalizados | Tela de detalhe lê `deal.custom_columns` via JSON, além dos grupos já observados. | Normalizador preserva `custom_columns`; detalhes v1 existentes retornam fonte integral. Sem garantia de preenchimento na conta. |
-| Busca customers | `HT` usa API v2 `customer` com `limit`, `offset`, `search`. | Indício de paginação nativa no cliente oficial. Sem execução autenticada, sua semântica e respeito ao limite permanecem não verificados pelo MCP; saída usa recorte local explícito. |
+| Ganho de oportunidade | `PUT /opportunity/winOpportunity/{id}` | `cloneOpportunity=NOT_CLONE`, `createAfterSale="false"`, `afterSalePipeline/idRouter/idUser=null`; sem clonagem ou pós-venda |
+| Perda de oportunidade | `PUT /opportunity/opportunityLost` | `id_opportunity`, `id_loss`, `exclusion_reason`; `cloning_opportunity`, `finishWorkflowInstances` e `reactivate_lead` falsos |
+| Anotação | `POST /history/index/` | Formulário no envelope `data`; `option=comment`, `message`, `receiver`, entidade e ID. Receiver é o usuário autenticado |
+| Atividade | `POST /history/index/` | `option=action`, `receiver`, `action`, `data`, `final_date`, `message`, `id_pipeline_item`; sem convite ou conclusão |
+| Releitura de histórico | `GET /history/index/` | `entity`, `id_entity`, `limit`, `offset`; releitura de até 25 entradas, sem comprovação automática de persistência |
+| Campos personalizados | Detalhe de lead/oportunidade | Normalizador preserva `custom_columns`, além dos outros grupos; preenchimento depende da conta |
+
+A busca v2 de customers usa `/customer?search=...`. O frontend também passa `limit` e `offset`, mas o servidor ainda não depende dessa paginação remota: a saída é recortada localmente, com cobertura explícita.
 
 A [referência OpenAPI pública](https://developers.leads2b.dev/api/openapi) consultada nesta revisão lista pedidos, itens de pedido, endereços e imagem de produto. A [documentação de webhooks](https://developers.leads2b.dev/webhooks/) descreve eventos Won/Lost; esses eventos não fornecem o contrato de mutação. Nenhuma das duas fontes substitui validação dos contratos internos acima.
 
-Lacunas para validação controlada: persistência real das quatro operações, permissões por endpoint, regras da conta, efeitos sobre workflows e pré-requisitos de ganho/perda. Ganho/perda de lead e conclusão de atividades continuam sem ferramenta dedicada. A ausência de exemplos de erro completos impede atribuir causas aos HTTP 400/500 relatados.
+Permissões por endpoint, regras obrigatórias e efeitos sobre workflows dependem da conta. As quatro operações têm contratos experimentais, sem garantia de persistência. Ganho/perda de lead e conclusão de atividades não possuem ferramenta dedicada. Para investigar HTTP 400/500, registre ferramenta, parâmetros e retorno sanitizados.

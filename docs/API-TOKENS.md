@@ -2,7 +2,7 @@
 
 ## Abrir as integrações
 
-Entre na conta Leads2b que será conectada ao MCP e acesse **Configurações > Integrações**. Para gerar a chave por usuário, use um perfil de administrador com acesso ao módulo de API. Se a seção não aparecer, peça ao administrador ou ao suporte da Leads2b para verificar as permissões e o plano.
+Entre na conta Leads2b que será conectada ao MCP e acesse **Configurações > Integrações**. Use um perfil autorizado a gerenciar integrações. Se a seção não aparecer, peça ao administrador ou ao suporte da Leads2b para verificar as permissões e o plano.
 
 ## Copiar a chave de empresa
 
@@ -26,7 +26,7 @@ Os campos do MCP recebem o token sem aspas, espaços extras ou o prefixo `Bearer
 
 ## Habilitar operações de leads e oportunidades
 
-Essas operações usam a API interna v1 e exigem um token que identifique um usuário autorizado. A chave de empresa e a chave por usuário têm escopos diferentes.
+CRUD de leads/oportunidades, ganho/perda e operações de histórico usam a API interna v1 e exigem um token que identifique um usuário autorizado. A chave de empresa e a chave por usuário têm escopos diferentes.
 
 Para verificar a chave por usuário também na API interna v1, configure-a explicitamente em **Token API v1**, mantenha a escrita em `disabled` e execute o health check descrito abaixo. O rótulo “API V2” da plataforma não comprova, por si só, acesso aos endpoints internos v1; prossiga somente se o MCP confirmar autenticação e contexto de usuário. Se não confirmar, solicite ao suporte da Leads2b uma credencial compatível com a API interna v1 para o usuário responsável.
 
@@ -36,7 +36,7 @@ O MCP não copia nem troca os tokens entre os dois campos automaticamente. Mesmo
 
 1. Salve as configurações com `write_mode=disabled`.
 2. No cliente MCP, peça: “Execute `leads2b_health_check` e informe autenticação, contexto de usuário e restrições, sem exibir tokens”.
-3. Confira separadamente o acesso às APIs v1 e v2. Para operações de negócios, confira também `apis.v1.userContext`.
+3. Confira os endpoints testados em `apis.v1` e `apis.v2`. Um erro em `/users` não comprova falha em todos os endpoints v2. Para operações de negócios e histórico, confira também `apis.v1.userContext`.
 4. Faça uma consulta conhecida da conta. Autenticação válida não garante permissão em todos os endpoints.
 5. Use `preview` para conferir uma operação de escrita sem alterar registros. Ative `live` somente quando quiser executar alterações reais.
 
@@ -44,7 +44,7 @@ O MCP não copia nem troca os tokens entre os dois campos automaticamente. Mesmo
 
 | Situação | O que verificar |
 |---|---|
-| Seção de chave por usuário ausente | Perfil de administrador, permissões e acesso ao módulo de API |
+| Seção de chave por usuário ausente | Permissões do perfil e acesso ao módulo de API |
 | Resposta 401 | Token incorreto, expirado ou substituído; confira o campo e copie novamente a chave válida |
 | Resposta 403 | Permissões do usuário, conta e acesso ao recurso |
 | API v1 sem contexto de usuário | Use uma credencial de usuário aceita pela API interna v1; a chave de empresa pode continuar válida para consultas |
