@@ -13,6 +13,7 @@ export type Leads2bRequestOptions = {
   query?: Record<string, string | number | boolean | Array<string | number | boolean> | undefined>;
   headers?: Record<string, string>;
   body?: unknown;
+  formBody?: Record<string, string>;
   signal?: AbortSignal;
 };
 
@@ -89,7 +90,9 @@ export class Leads2bHttpClient {
     }
 
     const url = this.buildUrl(path, options.query);
-    const body = options.body === undefined ? undefined : JSON.stringify(options.body);
+    if (options.formBody !== undefined && options.body !== undefined) throw new Error("Use body ou formBody, não ambos.");
+    const body = options.formBody !== undefined ? new URLSearchParams(options.formBody).toString()
+      : options.body === undefined ? undefined : JSON.stringify(options.body);
     const maxRetries = method === "GET" || method === "OPTIONS" ? this.maxReadRetries : 0;
     for (let attempt = 0; ; attempt++) {
       const controller = new AbortController();
@@ -103,7 +106,7 @@ export class Leads2bHttpClient {
           method,
           headers: {
             Accept: "application/json",
-            ...(body === undefined ? {} : { "Content-Type": "application/json" }),
+            ...(body === undefined ? {} : { "Content-Type": options.formBody !== undefined ? "application/x-www-form-urlencoded" : "application/json" }),
             Authorization: `Bearer ${this.token}`,
             ...options.headers
           },

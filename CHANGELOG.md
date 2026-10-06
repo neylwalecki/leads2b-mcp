@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.4.0 (candidato local)
+
+- Health check separa catálogo registrado, endpoints testados, pré-visualização e pré-requisitos live. Falha em `/users` não omite outras ferramentas v2.
+- Busca de customers retorna até 25 registros por padrão, com `limit`/`offset` locais e cobertura explícita; `returnAll=true` preserva a resposta integral. Recorte não reduz a transferência original.
+- Ferramentas experimentais para ganhar/perder oportunidade, criar anotação e registrar atividade no histórico. Contratos observados no frontend público; validação live pendente. Ganho/perda exigem confirmação extra, sem clonagem, pós-venda ou reativação.
+- Histórico usa formulário no envelope `data`; todas as novas mutações são enviadas uma vez e acompanhadas de releitura, inclusive em falha ambígua.
+- Detalhes normalizados preservam também `custom_columns`, incluindo JSON, arrays, zero e null.
+
+### Migração
+
+`availableTools` do health check agora representa o catálogo registrado. Use `verifiedCapabilities` para os GETs testados e `writeTools.livePrerequisitesMetTools` para pré-requisitos conhecidos, sem inferir permissão de escrita. `writeTools.previewTools` independe de tokens ou contexto de usuário.
+
+`leads2b_search_customers` passa a retornar `{customers, coverage}`. Para receber a resposta original, use `returnAll=true`, que retorna `{response, coverage}`; não combine com `limit`/`offset`. A paginação local refaz a consulta e não fornece snapshot atômico.
+
 ## 0.3.0
 
 - Pacote `.mcpb` com tokens sensíveis, leitura por padrão e dependências de produção; instruções de Claude Desktop e PowerShell.

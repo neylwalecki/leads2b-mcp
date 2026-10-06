@@ -1,6 +1,6 @@
 # Ferramentas MCP
 
-Contrato do candidato 0.3.0. A lista abaixo distingue ferramenta implementada, permissão da conta e cobertura dos dados.
+Contrato do candidato 0.4.0. A lista abaixo distingue ferramenta implementada, permissão da conta e cobertura dos dados.
 
 ## Retorno Padrão
 
@@ -24,7 +24,16 @@ type ToolResult<T> = {
 
 | Ferramenta | Finalidade |
 |---|---|
-| `leads2b_health_check` | Valida tokens, APIs, bases e ferramentas disponíveis. |
+| `leads2b_health_check` | Mostra catálogo registrado, resultado dos endpoints testados e pré-requisitos de escrita. |
+
+O health testa somente `GET v1 /user/logged/` e `GET v2 /users` (mais `/latest` quando `includeSnippet=true`). `apis.*.endpoint`, `method` e `scope` delimitam a observação. `ok=false` em `/users` não comprova indisponibilidade de `/customer` ou `/deals`, nem exigência de administrador.
+
+- Catálogo: `registeredTools` e seu alias de compatibilidade `availableTools`: ferramentas registradas, inclusive leituras sem token; não são permissões verificadas.
+- Capacidade verificada: `verifiedCapabilities`: somente GETs bem-sucedidos nesta chamada; não armazena validações de consultas anteriores.
+- Preview: `writeTools.previewTools`: todas as escritas em preview, mesmo sem tokens/usuário.
+- Pré-requisitos live: `writeTools.livePrerequisitesMetTools`: escritas em live com pré-requisitos conhecidos; permissão e regras de negócio ainda não verificadas.
+- Execução verificada: `writeTools.verifiedExecutionTools`: vazio; health não faz mutação. `writeTools.availableTools` é o alias dos previews ou pré-requisitos live, conforme o modo.
+
 
 ## Catálogos e Operação
 
@@ -64,13 +73,19 @@ type ToolResult<T> = {
 |---|---|---|
 | `leads2b_list_customers` | v1 | Lista customers via `/customer/index`; aceita `limit`, `offset`, `search` e `summaryOnly`. |
 | `leads2b_find_customer` | v1/local | Filtra localmente por e-mail, telefone, documento, nome ou texto. |
-| `leads2b_search_customers` | v2 | Busca server-side em `/customer?search={search}`. |
+| `leads2b_search_customers` | v2 | Busca por `search`; saída padrão de até 25 registros com cobertura, `limit`/`offset` locais e resposta integral opt-in. |
 | `leads2b_get_customer` | v2 | Consulta `/customer/{id}`. |
 | `leads2b_get_customer_v1` | v1 | Consulta `/customer/index/{id}`. |
 | `leads2b_list_contacts` | v1 | Contatos vinculados a `customerId`. |
 | `leads2b_get_contact` | v1 | Detalhe integral por ID. |
 | `leads2b_get_opportunity` | v1 | Detalhe integral por ID, sem depender da janela de uma listagem. |
 | `leads2b_get_lead_detail` | v1 | Consulta `/lead/index/{id}/defaultLead`. |
+
+### Volume da busca v2
+
+`search` é obrigatório. `limit` aceita 1..500 (padrão 25), `offset` é local (padrão 0). O retorno é `{customers, coverage}`, preservando todos os campos de cada registro selecionado. `coverage.fetched`, `returned`, `offset`, `limit`, `nextOffset` e `outputTruncated` descrevem o recorte da resposta recebida. `collection="unknown"`, `nativePagination="unverified"` e `transferLimited=false` deixam explícito que a cobertura da conta e a paginação nativa não foram verificadas. `nextOffset` navega somente pelos registros recebidos.
+
+`returnAll=true` devolve `{response, coverage}` com o envelope original integral, inclusive formatos desconhecidos; não combine com `limit` ou `offset`. Um formato desconhecido na saída limitada gera erro explícito, nunca zero clientes. A busca transfere a resposta original inteira antes do recorte. Chamadas de páginas locais refazem a busca; alterações na conta podem mudar os resultados entre chamadas.
 
 ## Operação Comercial de Leads
 
@@ -191,4 +206,23 @@ GET/OPTIONS executam diretamente. Métodos mutantes respeitam write-mode. Exclus
 
 ## Fora da cobertura específica
 
-Atividades mutantes, importações em massa, merges, ganhos/perdas, pedidos, produtos e conversões artificiais não possuem ferramentas específicas nesta versão. A ausência no MCP não significa ausência na Leads2b. A API pública tem contratos próprios, separados das APIs internas.
+Importações em massa, merges, ganho/perda de lead, pedidos, produtos e conversões artificiais não possuem ferramentas específicas nesta versão. A ausência no MCP não significa ausência na Leads2b. A API pública tem contratos próprios, separados das APIs internas.
+
+## Encerramento e histórico experimentais
+
+As quatro ferramentas abaixo respeitam `disabled` (não registradas), `preview` (sem chamadas, inclusive autenticação) e `live` (uma mutação, sem retry automático). Exigem usuário v1 para execução. Seus contratos foram observados no frontend público; não foram validados em conta conectada. Consulte [proveniência e limites](API-ENDPOINTS.md#contratos-experimentais-observados-em-05102026).
+
+| Ferramenta | Schema | Comportamento |
+|---|---|---|
+| `leads2b_win_opportunity` | `id`, `confirm_destructive?` | Ganho com confirmação extra em live, sem clonar nem criar pós-venda. |
+| `leads2b_lose_opportunity` | `id`, `id_loss`, `loss_reason`, `confirm_destructive?` | Perda com motivo e confirmação extra, sem clonar, reativar lead ou terminar workflows. Consulte `leads2b_list_loss_reasons` para IDs. |
+| `leads2b_create_note` | `entity: LEAD\|OPPORTUNITY`, `id`, `message`, `id_pipeline_item?` | Anotação `comment` no histórico; receiver é o usuário autenticado. |
+| `leads2b_create_activity` | `entity: LEAD\|OPPORTUNITY`, `id`, `message`, `receiver`, `action`, `data`, `final_date?`, `id_pipeline_item?` | Registro `action` no histórico. Consulte `leads2b_list_actions` e equipe para os IDs. |
+
+Datas devem ser válidas em `YYYY-MM-DD HH:mm:ss`, no horário da conta, com término igual ou posterior ao início. Não são convertidas silenciosamente. Restrições de agenda, campos obrigatórios, tipo de atividade, pipeline e permissões continuam sujeitas à API. Registrar atividade não equivale a enviar convite ou mensagem nem a declarar uma atividade concluída; estes contratos adicionais não foram implementados.
+
+Após a chamada, `outcome=request_accepted` significa somente resposta aceita; `outcome=rejected` representa rejeição de negócio. `readback.status=fetched` acompanha dados observados, sem afirmar ganho/perda confirmado. Releitura de histórico consulta até 25 entradas da entidade; não comprova unicidade nem cobertura integral. Se houver erro da mutação, o retorno permanece erro e inclui `writeState.outcome=unknown`, `automaticRetry=false` e a releitura. Se a releitura falhar após resposta aceita, a aceitação permanece registrada com `readback.status=failed`. Confira o estado antes de repetir.
+
+### Valores de campos personalizados
+
+Use `leads2b_get_record_detail` por ID, com `includeAttribution=false` para uma leitura isolada e `includeRaw=true` para preservar a fonte. Lead usa `/lead/index/{id}/defaultLead`; oportunidade usa `/opportunity/index/{id}`. `customFields` preserva os grupos `parameters`, `contactParameters`, `custom_fields`, `custom_columns` e `fields` quando retornados como objetos/arrays ou JSON válido. Zero e null dentro dos grupos não são descartados. Strings opacas permanecem em raw quando solicitado. O catálogo `leads2b_get_entity_columns` descreve definições, não comprova valores preenchidos. Ausência na listagem `/deals` não comprova ausência no detalhe nem na conta.

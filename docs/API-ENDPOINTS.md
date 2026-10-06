@@ -146,3 +146,28 @@ Base: `https://js.app.leads2b.com`
 | `/api/conversion` | POST | Confirmado | Registra conversão. |
 
 O MCP consulta e diagnostica o snippet. Ele não dispara conversões reais por padrão.
+
+## Contratos experimentais observados em 05/10/2026
+
+Fontes: [aplicativo público](https://app.leads2b.com/), [common-DbozlP4W.js](https://app.leads2b.com/common-DbozlP4W.js) e [deals-ClsvYcLi.js](https://app.leads2b.com/deals-ClsvYcLi.js). Inspeção estática de arquivos públicos, sem sessão, tokens ou chamadas autenticadas. URLs com hash podem deixar de existir; os fingerprints identificam o conteúdo observado.
+
+| Arquivo | SHA-256 |
+|---|---|
+| `common-DbozlP4W.js` | `2c3d64c9a13f25a7a9c38e010e25b9a19c87b74a69e4d8f089a39c57dead125d` |
+| `deals-ClsvYcLi.js` | `bbfc97b11793591f12cc2d3a95285ab83a13ee31651a87f1b6b30f933f503edc` |
+
+O cliente `E` do frontend aponta à API interna v1. Os contratos observados são instáveis e não comprovam persistência nem permissões com tokens do MCP.
+
+| Operação | Evidência no frontend | Implementação e limite |
+|---|---|---|
+| Ganho | `$We`, exportado como `cr`, chamado como `Cn` no modal; `PUT opportunity/winOpportunity/{id}`. | Payload do modal: `cloneOpportunity=NOT_CLONE`, `createAfterSale=false` como string, `afterSalePipeline/idRouter/idUser=null`. Não oferece clonagem, roteamento ou pós-venda. |
+| Perda | `ST` com `type=OPPORTUNITY`; `PUT opportunity/opportunityLost`. | `id_opportunity`, `id_loss`, `exclusion_reason`; `cloning_opportunity`, `finishWorkflowInstances` e `reactivate_lead` falsos. |
+| Anotação | `qb`, exportado como `dH`; `POST history/index/` com formulário no envelope `data`. Formulário/comentários usam `option=comment`, `message`, `receiver`, entidade e ID. | Receiver restrito ao usuário autenticado, sem menções, anexos ou notificações adicionais por ferramenta. Efeitos internos do fornecedor seguem suas regras. |
+| Atividade | Formulário chama `qb` com `option=action`, `receiver`, `action`, `data`, `final_date`, `message`, `id_pipeline_item`. | Insere no histórico; não cria evento de calendário, convite, envio de mensagem ou marca conclusão. |
+| Histórico | `ci`: `GET history/index/` com `entity`, `id_entity`, `limit`, `offset`. | Releitura de até 25 registros após as novas operações. Não é prova automática de persistência. |
+| Campos personalizados | Tela de detalhe lê `deal.custom_columns` via JSON, além dos grupos já observados. | Normalizador preserva `custom_columns`; detalhes v1 existentes retornam fonte integral. Sem garantia de preenchimento na conta. |
+| Busca customers | `HT` usa API v2 `customer` com `limit`, `offset`, `search`. | Indício de paginação nativa no cliente oficial. Sem execução autenticada, sua semântica e respeito ao limite permanecem não verificados pelo MCP; saída usa recorte local explícito. |
+
+A [referência OpenAPI pública](https://developers.leads2b.dev/api/openapi) consultada nesta revisão lista pedidos, itens de pedido, endereços e imagem de produto. A [documentação de webhooks](https://developers.leads2b.dev/webhooks/) descreve eventos Won/Lost; esses eventos não fornecem o contrato de mutação. Nenhuma das duas fontes substitui validação dos contratos internos acima.
+
+Lacunas para validação controlada: persistência real das quatro operações, permissões por endpoint, regras da conta, efeitos sobre workflows e pré-requisitos de ganho/perda. Ganho/perda de lead e conclusão de atividades continuam sem ferramenta dedicada. A ausência de exemplos de erro completos impede atribuir causas aos HTTP 400/500 relatados.

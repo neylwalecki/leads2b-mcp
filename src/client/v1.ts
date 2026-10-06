@@ -175,6 +175,14 @@ export class Leads2bV1Client {
     return this.http.get(`/lead/index/${input.id}/defaultLead`);
   }
 
+  createHistory(data: Record<string, unknown>): Promise<unknown> {
+    const formBody: Record<string, string> = {};
+    for (const [key, value] of Object.entries(data)) {
+      if (value !== undefined) formBody[`data[${key}]`] = value === null ? "" : String(value);
+    }
+    return this.http.post("/history/index/", { formBody });
+  }
+
   rawRequest(input: Leads2bRawRequestInput): Promise<unknown> {
     return this.http.request(input.method, input.path, {
       query: input.query,

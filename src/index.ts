@@ -9,6 +9,7 @@ import { registerAttributionTools } from "./tools/attribution.js";
 import { registerHealthTool } from "./tools/health.js";
 import { registerRawApiTool } from "./tools/raw-api.js";
 import { registerReadTools } from "./tools/read.js";
+import { registerDealActionTools } from "./tools/deal-actions.js";
 import { registerWriteTools } from "./tools/write.js";
 
 const config = loadConfig();
@@ -30,7 +31,7 @@ const v2 = new Leads2bV2Client(
 
 const server = new McpServer({
   name: "leads2b-mcp",
-  version: "0.3.0"
+  version: "0.4.0"
 });
 
 registerHealthTool(server, { config, v1, v2 });
@@ -39,6 +40,7 @@ registerAttributionTools(server, { v1, v2 });
 
 if (config.writeMode !== "disabled") {
   registerWriteTools(server, { v1, writeMode: config.writeMode });
+  registerDealActionTools(server, { v1, writeMode: config.writeMode });
 }
 
 if (config.rawApiEnabled) {

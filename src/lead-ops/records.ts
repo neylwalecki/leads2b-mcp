@@ -393,7 +393,7 @@ function datesFromRecord(record: Record<string, unknown>): LeadOpsRecord["dates"
 function customFieldsFromRecord(record: Record<string, unknown>): Record<string, unknown> | undefined {
   const customFields: Record<string, unknown> = {};
 
-  for (const key of ["parameters", "contactParameters", "custom_fields", "fields"]) {
+  for (const key of ["parameters", "contactParameters", "custom_fields", "custom_columns", "fields"]) {
     let value = record[key];
     if (typeof value === "string") {
       try { value = JSON.parse(value); } catch { /* Preserve opaque data in raw only. */ }

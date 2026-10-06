@@ -5,6 +5,7 @@ import { Leads2bV1Client } from "../client/v1.js";
 import { Leads2bV2Client } from "../client/v2.js";
 import { okResult } from "./result.js";
 import { RAW_API_TOOL_NAME } from "./raw-api.js";
+import { DEAL_ACTION_TOOL_NAMES } from "./deal-actions.js";
 import { WRITE_TOOL_NAMES } from "./write.js";
 
 type HealthDeps = {
@@ -14,6 +15,9 @@ type HealthDeps = {
 };
 
 type ApiHealth = {
+  endpoint?: string;
+  method?: "GET";
+  scope?: "tested_endpoint_only";
   configured: boolean;
   responded: boolean;
   ok: boolean;
@@ -83,7 +87,7 @@ export function registerHealthTool(server: McpServer, deps: HealthDeps): void {
     "leads2b_health_check",
     {
       title: "Leads2b health check",
-      description: "Valida configuração local, tokens, APIs e disponibilidade de ferramentas do MCP.",
+      description: "Mostra configuração, catálogo registrado e resultado dos endpoints testados. Não infere permissões dos demais endpoints.",
       inputSchema: {
         includeSnippet: z.boolean().optional()
       },
@@ -93,30 +97,36 @@ export function registerHealthTool(server: McpServer, deps: HealthDeps): void {
     },
     async ({ includeSnippet = false }) => {
       const [v1Health, v2Health, snippetHealth] = await Promise.all([
-        checkApi(deps.v1.hasToken(), () => deps.v1.getLoggedUser(), true),
-        checkApi(deps.v2.hasToken(), () => deps.v2.listUsers()),
+        checkApi(deps.v1.hasToken(), "/user/logged/", () => deps.v1.getLoggedUser(), true),
+        checkApi(deps.v2.hasToken(), "/users", () => deps.v2.listUsers()),
         includeSnippet ? checkSnippet(deps.config.publicWorkerUrl) : Promise.resolve(undefined)
       ]);
-      const availableWrites = deps.config.writeMode !== "disabled" && v1Health.ok
-        ? WRITE_TOOL_NAMES.filter(name => v1Health.userContext || /_(customer|contact)$/.test(name)) : [];
-      const availableTools = [
-        ...LOCAL_TOOLS,
-        ...(v1Health.ok ? V1_TOOLS : []),
-        ...(v2Health.ok ? V2_TOOLS : []),
-        ...(v1Health.ok && v2Health.ok ? CROSS_API_TOOLS : []),
-        ...availableWrites,
-        ...(deps.config.rawApiEnabled ? [RAW_API_TOOL_NAME] : [])
+      const registeredWrites = deps.config.writeMode !== "disabled" ? [...WRITE_TOOL_NAMES, ...DEAL_ACTION_TOOL_NAMES] : [];
+      const previewTools = deps.config.writeMode === "preview" ? registeredWrites : [];
+      const livePrerequisitesMetTools = deps.config.writeMode === "live" && v1Health.ok
+        ? registeredWrites.filter(name => v1Health.userContext || /_(customer|contact)$/.test(name)) : [];
+      const availableWrites = [...previewTools, ...livePrerequisitesMetTools];
+      const registeredTools = [
+        ...LOCAL_TOOLS, ...V1_TOOLS, ...V2_TOOLS, ...CROSS_API_TOOLS,
+        ...registeredWrites, ...(deps.config.rawApiEnabled ? [RAW_API_TOOL_NAME] : [])
+      ];
+      const verifiedCapabilities = [
+        ...(v1Health.ok ? [{ api: "v1", method: "GET", endpoint: "/user/logged/" }] : []),
+        ...(v2Health.ok ? [{ api: "v2", method: "GET", endpoint: "/users" }] : []),
+        ...(snippetHealth?.ok ? [{ api: "snippet", method: "GET", endpoint: "/latest" }] : [])
       ];
       const warnings: string[] = [];
       if (v1Health.ok && !v1Health.userContext) warnings.push("API v1 respondeu sem contexto de usuário; CRUD de leads/oportunidades exige token v1 de usuário autorizado.");
 
       if (!deps.config.apiV1Token) {
-        warnings.push("LEADS2B_API_V1_TOKEN não configurado; ferramentas v1 ficam indisponíveis.");
+        warnings.push("LEADS2B_API_V1_TOKEN não configurado; leituras v1 não podem executar, mas continuam registradas.");
       }
 
       if (!deps.config.apiV2Token) {
-        warnings.push("LEADS2B_API_V2_TOKEN não configurado; ferramentas v2 ficam indisponíveis.");
+        warnings.push("LEADS2B_API_V2_TOKEN não configurado; leituras v2 não podem executar, mas continuam registradas.");
       }
+
+      if (!v2Health.ok && v2Health.configured) warnings.push("Falha em GET /users; acesso a /customer, /deals e demais endpoints não foi testado por este health check.");
 
       return okResult({
         ok: true,
@@ -141,17 +151,23 @@ export function registerHealthTool(server: McpServer, deps: HealthDeps): void {
             mode: deps.config.writeMode,
             registered: deps.config.writeMode !== "disabled",
             availableTools: availableWrites,
-            registeredTools: deps.config.writeMode !== "disabled" ? WRITE_TOOL_NAMES : []
+            registeredTools: registeredWrites,
+            previewTools,
+            livePrerequisitesMetTools,
+            verifiedExecutionTools: [],
+            executionBasis: "Pré-requisitos locais e contexto de usuário; permissões e regras de cada operação não verificadas. Exclusões e ganho/perda exigem confirmação."
           },
           rawApi: {
             enabled: deps.config.rawApiEnabled,
             availableTool: deps.config.rawApiEnabled ? RAW_API_TOOL_NAME : undefined
           },
-          availabilityBasis: "Inferida por autenticação de cada API; não comprova permissão em cada endpoint nem sucesso de escrita.",
-          availableTools
+          availabilityBasis: "availableTools é o catálogo registrado, não uma lista de permissões. verifiedCapabilities cobre somente os GETs bem-sucedidos nesta chamada.",
+          registeredTools,
+          verifiedCapabilities,
+          availableTools: registeredTools
         },
         warnings,
-        summary: `Leads2b MCP health: v1=${statusLabel(v1Health)}, v2=${statusLabel(v2Health)}.`,
+        summary: `Leads2b MCP health: GET v1 /user/logged/=${statusLabel(v1Health)}, GET v2 /users=${statusLabel(v2Health)}. Demais endpoints v1/v2 não testados.`,
         source: {
           api: "local",
           stability: "confirmed"
@@ -161,9 +177,11 @@ export function registerHealthTool(server: McpServer, deps: HealthDeps): void {
   );
 }
 
-async function checkApi(configured: boolean, request: () => Promise<unknown>, inspectUser = false): Promise<ApiHealth> {
+async function checkApi(configured: boolean, endpoint: string, request: () => Promise<unknown>, inspectUser = false): Promise<ApiHealth> {
+  const evidence = { endpoint, method: "GET", scope: "tested_endpoint_only" } as const;
   if (!configured) {
     return {
+      ...evidence,
       configured: false,
       responded: false,
       ok: false,
@@ -176,6 +194,7 @@ async function checkApi(configured: boolean, request: () => Promise<unknown>, in
     const rawUser = response?.data?.user;
     const user = Array.isArray(rawUser) ? rawUser[0] : rawUser;
     return {
+      ...evidence,
       configured: true,
       responded: true,
       ...(inspectUser ? { userContext: Boolean(user && typeof user === "object" && "id" in user && user.id) } : {}),
@@ -184,6 +203,7 @@ async function checkApi(configured: boolean, request: () => Promise<unknown>, in
   } catch (error) {
     const status = typeof error === "object" && error && "status" in error ? Number(error.status) : undefined;
     return {
+      ...evidence,
       configured: true,
       responded: Boolean(status),
       ok: false,
@@ -194,12 +214,14 @@ async function checkApi(configured: boolean, request: () => Promise<unknown>, in
 }
 
 async function checkSnippet(publicWorkerUrl: string): Promise<ApiHealth> {
+  const evidence = { endpoint: "/latest", method: "GET", scope: "tested_endpoint_only" } as const;
   try {
     const response = await fetch(`${publicWorkerUrl.replace(/\/$/, "")}/latest`, {
       method: "GET", signal: AbortSignal.timeout(30000)
     });
 
     return {
+      ...evidence,
       configured: true,
       responded: true,
       ok: response.ok,
@@ -207,6 +229,7 @@ async function checkSnippet(publicWorkerUrl: string): Promise<ApiHealth> {
     };
   } catch (error) {
     return {
+      ...evidence,
       configured: true,
       responded: false,
       ok: false,

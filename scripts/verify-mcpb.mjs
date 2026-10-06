@@ -48,13 +48,27 @@ try {
       const toolNames = tools.map(tool => tool.name);
       assert(toolNames.includes("leads2b_scan_lead_ops") && toolNames.includes("leads2b_get_contact"));
       assert(!toolNames.includes("leads2b_api_request"));
-      const writes = toolNames.filter(name => /^leads2b_(create|update|delete)_/.test(name));
-      assert.equal(writes.length, mode === "preview" ? 12 : 0);
+      const writes = tools.filter(tool => tool.annotations?.readOnlyHint === false);
+      assert.equal(writes.length, mode === "preview" ? 16 : 0);
       if (mode === "preview") {
         const result = await client.callTool({ name: "leads2b_create_customer", arguments: { fields: { name: "Example", type: "PERSON" } } });
         assert(!result.isError);
         assert.equal(result.structuredContent.data.executed, false);
         assert.equal(result.structuredContent.data.endpoint, "/customer/index");
+      }
+      const health = await client.callTool({ name: "leads2b_health_check", arguments: {} });
+      assert.deepEqual(health.structuredContent.data.registeredTools.toSorted(), toolNames.toSorted());
+      if (mode === "preview") {
+        for (const [name, args] of [
+          ["leads2b_win_opportunity", { id: 123 }],
+          ["leads2b_lose_opportunity", { id: 123, id_loss: 2, loss_reason: "Example" }],
+          ["leads2b_create_note", { entity: "LEAD", id: 123, message: "Example" }],
+          ["leads2b_create_activity", { entity: "OPPORTUNITY", id: 123, message: "Example", receiver: 7, action: 2, data: "2026-10-05 12:00:00" }]
+        ]) {
+          const result = await client.callTool({ name, arguments: args });
+          assert(!result.isError);
+          assert.equal(result.structuredContent.data.executed, false);
+        }
       }
       const normalized = await client.callTool({ name: "leads2b_normalize_source", arguments: { utm_source: "chatgpt.com", host: "example.com" } });
       assert(!normalized.isError);

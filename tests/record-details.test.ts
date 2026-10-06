@@ -23,3 +23,9 @@ it("reads exact IDs and unwraps native v1 detail envelopes without a list window
     }
   }
 });
+
+it("preserves detail custom_columns JSON and opaque values without conflating missing with zero", async () => {
+  const { recordDetailFromRaw } = await import("../src/lead-ops/records.js");
+  const result = recordDetailFromRaw({ entityType: "OPPORTUNITY", raw: { id: 123, custom_columns: '[{"budget":0,"source":null}]', custom_fields: { untouched: "Original" } }, includeRaw: true });
+  expect(result.customFields).toMatchObject({ custom_columns: [{ budget: 0, source: null }], custom_fields: { untouched: "Original" } });
+});

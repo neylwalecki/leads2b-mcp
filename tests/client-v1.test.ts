@@ -218,3 +218,19 @@ describe("Leads2bV1Client", () => {
     ]);
   });
 });
+
+it("encodes history using the observed form envelope without retrying mutations", async () => {
+  const { Leads2bHttpClient } = await import("../src/client/http.js");
+  const oldFetch = globalThis.fetch;
+  const calls: any[] = [];
+  globalThis.fetch = async (_url, init) => { calls.push(init); return Response.json({ message: { id: 91 } }); };
+  try {
+    const client = new Leads2bV1Client(new Leads2bHttpClient({ api: "v1", baseUrl: "https://example.com/api/v1", token: "<TOKEN>" }));
+    await client.createHistory({ entity: "LEAD", id_entity: 123, option: "comment", message: "A & B + C", receiver: 7 });
+    expect(calls).toHaveLength(1);
+    expect(calls[0].headers["Content-Type"]).toBe("application/x-www-form-urlencoded");
+    const body = new URLSearchParams(calls[0].body);
+    expect(body.get("data[message]")).toBe("A & B + C");
+    expect(body.get("data[id_entity]")).toBe("123");
+  } finally { globalThis.fetch = oldFetch; }
+});

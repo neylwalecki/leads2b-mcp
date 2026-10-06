@@ -134,21 +134,27 @@ export function registerCustomerTools(server: McpServer, deps: ReadDeps): void {
     "leads2b_search_customers",
     {
       title: "Search customers",
-      description: "Busca customers pela API v2 usando o parâmetro search.",
+      description: "Busca customers pela API v2. Retorna até 25 registros por padrão; limit/offset recortam somente a saída local, sem limitar a transferência. returnAll devolve a resposta integral. Paginação nativa não verificada.",
       inputSchema: {
-        search: z.string().min(1)
+        search: z.string().min(1),
+        limit: z.number().int().min(1).max(500).optional(),
+        offset: z.number().int().min(0).optional(),
+        returnAll: z.boolean().optional()
       },
       annotations: {
         readOnlyHint: true
       }
     },
-    async ({ search }) => {
+    async ({ search, limit, offset, returnAll = false }) => {
       try {
-        const data = await deps.v2.searchCustomers({ search });
+        if (returnAll && (offset !== undefined || limit !== undefined)) throw new Error("returnAll não pode ser combinado com recorte limit/offset.");
+        const response = await deps.v2.searchCustomers({ search });
+        const data = prepareCustomerSearchOutput(response, { limit: limit ?? 25, offset: offset ?? 0, returnAll });
         return okResult({
           ok: true,
           data,
-          summary: "Search customers: consulta concluída.",
+          warnings: ["Recorte local limita somente a saída. A transferência original e a paginação nativa não são controladas; cobertura da coleta desconhecida."],
+          summary: "Search customers: consulta concluída; confira coverage para o recorte e os limites da coleta.",
           source: { api: "v2", endpoint: "/customer?search={search}", stability: "observed" }
         });
       } catch (error) {
@@ -210,4 +216,23 @@ export function registerCustomerTools(server: McpServer, deps: ReadDeps): void {
       }
     }
   );
+}
+
+function prepareCustomerSearchOutput(response: unknown, input: { limit: number; offset: number; returnAll: boolean }) {
+  const object = response && typeof response === "object" ? response as Record<string, unknown> : undefined;
+  const data = object?.data;
+  const nested = data && typeof data === "object" ? data as Record<string, unknown> : undefined;
+  const rows = [response, data, nested?.customers, object?.customers].find(Array.isArray) as unknown[] | undefined;
+  if (!rows && !input.returnAll) throw new Error("Formato de customers desconhecido; use returnAll=true para inspecionar a resposta integral.");
+  const customers = rows?.slice(input.offset, input.offset + input.limit);
+  const coverage = {
+    fetched: rows?.length ?? null,
+    returned: input.returnAll ? rows?.length ?? null : customers!.length,
+    offset: input.returnAll ? 0 : input.offset,
+    limit: input.returnAll ? null : input.limit,
+    nextOffset: !input.returnAll && input.offset + customers!.length < rows!.length ? input.offset + customers!.length : null,
+    outputTruncated: !input.returnAll && customers!.length < rows!.length,
+    nativePagination: "unverified", collection: "unknown", transferLimited: false
+  };
+  return input.returnAll ? { response, coverage } : { customers, coverage };
 }
