@@ -9,7 +9,7 @@ export type DealScanInput = {
 };
 export type DealCoverage = {
   status: "complete" | "partial";
-  reason: "total_reached" | "empty_page" | "page_limit" | "repeated_page" | "request_failed" | "collection_changed";
+  reason: "total_reached" | "empty_page" | "page_limit" | "repeated_page" | "request_failed" | "collection_changed" | "invalid_response" | "inconsistent_total";
   pagesFetched: number;
   recordsFetched: number;
   startOffset: number;
@@ -45,16 +45,21 @@ export async function scanDeals(client: Pick<Leads2bV2Client, "listDeals">, inpu
     }
     const envelope = response as { data?: unknown; total?: unknown };
     if (!envelope || !Array.isArray(envelope.data) || !envelope.data.every(isRow)) {
-      throw new Error("Formato inesperado em /deals; não é seguro tratar a resposta como coleção vazia.");
+      if (pagesFetched === 0) throw new Error("Formato inesperado em /deals; não é seguro tratar a resposta como coleção vazia.");
+      reason = "invalid_response";
+      warnings.push("Uma página de /deals tem formato inválido; os registros anteriores foram preservados.");
+      break;
     }
     pagesFetched++;
     const rows = envelope.data;
-    const pageTotal = typeof envelope.total === "number" && Number.isFinite(envelope.total) && envelope.total >= 0
+    const pageTotal = typeof envelope.total === "number" && Number.isSafeInteger(envelope.total) && envelope.total >= 0
       ? envelope.total : undefined;
+    const invalidTotal = envelope.total !== undefined && pageTotal === undefined;
     if (total !== undefined && pageTotal !== undefined && total !== pageTotal) changed = true;
     total = pageTotal ?? total;
     if (rows.length === 0) {
-      reason = total !== undefined && offset < total ? "collection_changed" : "empty_page";
+      reason = invalidTotal ? "inconsistent_total"
+        : total !== undefined && offset < total ? "collection_changed" : "empty_page";
       break;
     }
     let added = 0;
@@ -68,10 +73,15 @@ export async function scanDeals(client: Pick<Leads2bV2Client, "listDeals">, inpu
     if (added !== rows.length) changed = true;
     if (added === 0) { reason = "repeated_page"; break; }
     offset += rows.length;
+    if (invalidTotal || (total !== undefined && offset > total)) {
+      reason = "inconsistent_total";
+      break;
+    }
     if (total !== undefined && offset >= total) { reason = "total_reached"; break; }
   }
   if (changed && ["total_reached", "empty_page"].includes(reason)) reason = "collection_changed";
   const complete = reason === "total_reached" || reason === "empty_page";
+  if (reason === "inconsistent_total") warnings.push("Total de /deals inválido ou incompatível com os registros recebidos; cobertura completa não comprovada.");
   if (!complete) warnings.push(`Cobertura parcial de ${input.entity}: ${reason}. Não interprete ausência como inexistência.`);
   const coverage: DealCoverage = {
     status: complete ? "complete" : "partial", reason, pagesFetched, recordsFetched: data.length,

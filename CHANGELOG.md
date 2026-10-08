@@ -13,10 +13,14 @@ Mudanças ainda não distribuídas ficam em `Unreleased`. Versões publicadas es
 
 - Busca de registros e oportunidades recentes coletam até 20 páginas de deals por entidade por padrão, em vez de somente a primeira. Limites explícitos continuam respeitados; filtros e ordenação são aplicados à coleção coletada.
 - Resumos distinguem correspondências na coleta de cobertura completa. Resposta inválida de customers produz falha daquela fonte sem ocultar oportunidades obtidas com sucesso.
+- Coleta de deals preserva páginas válidas quando uma resposta posterior tem formato inválido, com cobertura parcial `invalid_response`. Formato inválido na primeira página continua sendo erro.
+- Totais de deals inválidos ou inferiores ao offset consumido não comprovam completude: a coleta preserva os registros e retorna cobertura parcial `inconsistent_total`.
 
 ### Migração
 
 `maxPages` aceita 1..20 e agora tem padrão 20 em `leads2b_find_records` e `leads2b_list_recent_opportunities`; `fetchLimit` mantém o padrão 100. A coleta pode realizar mais requisições. Informe um orçamento menor para reduzir consultas e confira `coverage` antes de concluir que um registro não existe. `limit`/`offset` continuam recortando somente a saída; aumentar `offset` não avança a coleta remota. `leads2b_scan_lead_ops` mantém seu padrão de 5 páginas.
+
+Consumidores de `DealCoverage.reason` devem aceitar também `invalid_response` e `inconsistent_total`. `pagesFetched` conta somente páginas com uma coleção válida; `nextOffset` mantém a posição após os registros recebidos, sem avançar sobre uma resposta de formato inválido. Um total presente deve ser número inteiro não negativo e seguro; valores de outros tipos não são convertidos automaticamente.
 
 ## [0.4.2] - 2026-10-06
 

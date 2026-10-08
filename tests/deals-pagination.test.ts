@@ -47,4 +47,42 @@ describe("observed deals pagination", () => {
     globalThis.fetch = async () => Response.json({ unexpected: [] });
     await expect(client().scanDeals({ entity: "LEAD" })).rejects.toThrow(/formato/i);
   });
+
+  it.each([{ unexpected: [] }, { data: [null], total: 2 }])(
+    "preserves valid pages when a later response has an invalid format: %j", async invalid => {
+      globalThis.fetch = async url => Number(new URL(String(url)).searchParams.get("offset")) === 0
+        ? Response.json({ data: [{ id: 1 }], total: 2 }) : Response.json(invalid);
+      const result = await client().scanDeals({ entity: "OPPORTUNITY", pageSize: 1, maxPages: 3 });
+      expect(result.data).toEqual([{ id: 1 }]);
+      expect(result.coverage).toMatchObject({
+        status: "partial", reason: "invalid_response", pagesFetched: 1, recordsFetched: 1, nextOffset: 1
+      });
+      expect(result.warnings.length).toBeGreaterThan(0);
+    }
+  );
+
+  it.each([0, 0.5, -1, "0"])("does not claim completeness with an invalid or contradictory total: %j", async total => {
+    globalThis.fetch = async () => Response.json({ data: [{ id: 1 }], total });
+    const result = await client().scanDeals({ entity: "LEAD", pageSize: 1, maxPages: 1 });
+    expect(result.data).toEqual([{ id: 1 }]);
+    expect(result.coverage).toMatchObject({
+      status: "partial", reason: "inconsistent_total", pagesFetched: 1, recordsFetched: 1, nextOffset: 1
+    });
+  });
+
+  it("preserves all received records when a later total falls below the consumed offset", async () => {
+    globalThis.fetch = async url => Number(new URL(String(url)).searchParams.get("offset")) === 0
+      ? Response.json({ data: [{ id: 1 }], total: 3 }) : Response.json({ data: [{ id: 2 }], total: 1 });
+    const result = await client().scanDeals({ entity: "OPPORTUNITY", pageSize: 1, maxPages: 3 });
+    expect(result.data).toEqual([{ id: 1 }, { id: 2 }]);
+    expect(result.coverage).toMatchObject({ status: "partial", reason: "inconsistent_total", nextOffset: 2 });
+  });
+
+  it("does not reuse a previous total as proof when a later page exceeds it without a total", async () => {
+    globalThis.fetch = async url => Number(new URL(String(url)).searchParams.get("offset")) === 0
+      ? Response.json({ data: [{ id: 1 }], total: 2 }) : Response.json({ data: [{ id: 2 }, { id: 3 }] });
+    const result = await client().scanDeals({ entity: "LEAD", pageSize: 2, maxPages: 3 });
+    expect(result.data).toEqual([{ id: 1 }, { id: 2 }, { id: 3 }]);
+    expect(result.coverage).toMatchObject({ status: "partial", reason: "inconsistent_total", nextOffset: 3 });
+  });
 });
