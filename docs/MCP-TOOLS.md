@@ -96,6 +96,14 @@ O health testa somente `GET v1 /user/logged/` e `GET v2 /users` (mais `/latest` 
 
 `returnAll=true` devolve `{response, coverage}` com o envelope original integral, inclusive formatos desconhecidos; não combine com `limit` ou `offset`. Um formato desconhecido na saída limitada gera erro explícito, nunca zero clientes. A busca transfere a resposta original inteira antes do recorte. Chamadas de páginas locais refazem a busca; alterações na conta podem mudar os resultados entre chamadas.
 
+## Histórico
+
+`leads2b_list_history` solicita `GET /history/index/` com `entity` (`LEAD` ou `OPPORTUNITY`), `id` inteiro positivo ou string numérica positiva, `limit` (1..100, padrão 25) e `offset` (inteiro não negativo, padrão 0). A ferramenta fica disponível em todos os modos de escrita e não exige habilitar a API avançada. Não cria anotação, atividade, convite ou mensagem.
+
+O retorno é `{response, coverage}`. `response` preserva integralmente o envelope da API; `coverage.requested` informa o `limit` e o `offset` solicitados. `coverage.status="unknown"` e `reason="native_pagination_unverified"` indicam que o servidor não confirmou se a API respeita esses parâmetros nem se a página esgota o histórico. Não há `nextOffset` calculado nem interpretação de formatos desconhecidos como lista vazia. Para consultar outra página, informe o offset desejado e compare as entradas recebidas antes de concluir que a paginação avançou.
+
+A leitura usa um endpoint interno observado, sujeito a mudanças. Não há bloqueio prévio por contexto de usuário; erros de acesso ou do servidor são preservados. As ferramentas de criação de anotação/atividade continuam sujeitas ao modo de escrita e aos seus pré-requisitos.
+
 ## Operação comercial de leads
 
 Ferramentas de coleta e busca para automações, planilhas e relatórios.
@@ -107,6 +115,16 @@ Ferramentas de coleta e busca para automações, planilhas e relatórios.
 | `leads2b_list_recent_opportunities` | v2/local | Lista `/deals?entity=OPPORTUNITY` e aplica filtros locais por data, status, funil, etapa, responsável e texto. |
 | `leads2b_get_record_detail` | v1/v2/local | Retorna detalhe normalizado de `CUSTOMER`, `LEAD`, `CONTACT` ou `OPPORTUNITY`; inclui atribuição quando disponível. |
 | `leads2b_get_lead_ops_candidates` | v1/v2/local | Retorna candidatos com dados básicos, comerciais, atribuição, duplicidades, campos ausentes e warnings. |
+
+### Limites da busca e das oportunidades recentes
+
+`leads2b_find_records` e `leads2b_list_recent_opportunities` usam `fetchLimit` (1..500, padrão 100) como tamanho solicitado de página e `maxPages` (1..20, padrão 20) como orçamento de coleta por entidade de negócio. O padrão permite até 2.000 registros por entidade quando a API respeita o tamanho solicitado; uma coleção maior ou páginas menores podem deixar a cobertura parcial. A coleta termina antes do orçamento quando alcança o total informado ou uma página vazia válida; falhas, repetição de páginas e mudanças observadas na coleção impedem declarar cobertura completa.
+
+`limit` (1..100, padrão 25) e `offset` (padrão 0) recortam somente os resultados após filtros e ordenação. Cada chamada refaz a coleta desde o início, sem snapshot atômico. O `nextOffset` em uma cobertura de deals descreve a coleta remota e não deve ser usado como offset da saída dessas ferramentas. Se a coleção ultrapassar o orçamento, a busca por texto não substitui um detalhe direto por ID nem garante encontrar o registro.
+
+Na busca, `coverage.sources` é uma lista por entidade, com `status` e `reason`; fontes de deals também incluem `pagesFetched`, `recordsFetched`, `startOffset`, `nextOffset` quando parcial e `totalAvailable` quando informado. `coverage.status` é `partial` se qualquer fonte estiver parcial, `unknown` se houver fonte desconhecida e nenhuma parcial, ou `complete` se todas as fontes solicitadas estiverem completas. Customers sem metadados de completude ficam `unknown`; CONTACT fica `partial` por falta de busca global. Resposta de customers fora do envelope observado `data.customers` gera falha da fonte. Os demais resultados válidos são preservados.
+
+Nas oportunidades recentes, `coverage` descreve o scan de OPPORTUNITY. Filtros por criação não alteram a ordenação: cada registro usa primeiro atualização, depois criação, depois próxima ação, em ordem decrescente. Com cobertura parcial, a ordenação vale somente entre os registros coletados. Zero correspondências com cobertura `partial` ou `unknown` não comprova ausência na conta.
 
 Schema resumido de candidato:
 

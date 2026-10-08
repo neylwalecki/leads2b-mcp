@@ -5,6 +5,7 @@ import { z } from "zod";
 import { diagnoseAttributionBatch } from "../../attribution/batch.js";
 import { Leads2bEntity } from "../../attribution/normalize.js";
 import { Leads2bHttpError } from "../../client/http.js";
+import type { DealCoverage } from "../../client/deals.js";
 import {
   LeadOpsEntity,
   LeadOpsRecord,
@@ -18,6 +19,11 @@ import { IdSchema, ReadDeps } from "./shared.js";
 
 const LeadOpsEntitySchema = z.enum(["CUSTOMER", "LEAD", "CONTACT", "OPPORTUNITY"]);
 const DealEntitySchema = z.enum(["LEAD", "OPPORTUNITY"]);
+type RecordSourceCoverage = (DealCoverage & { entity: LeadOpsEntity }) | {
+  entity: LeadOpsEntity;
+  status: "partial" | "unknown";
+  reason: "source_failed" | "native_pagination_unverified" | "unsupported_entity";
+};
 const SearchCriteriaSchema = {
   search: z.string().min(1).optional(),
   email: z.string().min(1).optional(),
@@ -58,7 +64,7 @@ export function registerLeadOpsTools(server: McpServer, deps: ReadDeps): void {
     {
       title: "Find records",
       description:
-        "Busca registros genericamente por e-mail, telefone, documento, nome, empresa ou texto, cruzando customers e deals quando a API permite.",
+        "Busca registros por e-mail, telefone, documento, nome, empresa ou texto, incluindo IDs. Coleta até 20 páginas de deals por entidade por padrão e filtra localmente; coverage informa fontes parciais ou desconhecidas. limit/offset recortam somente a saída.",
       inputSchema: {
         ...SearchCriteriaSchema,
         entities: z.array(LeadOpsEntitySchema).min(1).optional(),
@@ -92,7 +98,7 @@ export function registerLeadOpsTools(server: McpServer, deps: ReadDeps): void {
           criteria,
           requestedEntities,
           fetchLimit: input.fetchLimit ?? 100,
-          maxPages: input.maxPages
+          maxPages: input.maxPages ?? 20
         });
         const data = findRecordsFromSources({
           criteria,
@@ -109,10 +115,11 @@ export function registerLeadOpsTools(server: McpServer, deps: ReadDeps): void {
           ok: true,
           data: {
             ...data,
+            coverage: sources.coverage,
             warnings
           },
           warnings,
-          summary: `Find records: ${data.matchedTotal} registro(s) encontrado(s) em ${data.totalScanned} analisado(s).`,
+          summary: `Find records: ${data.matchedTotal} correspondência(s) em ${data.totalScanned} registro(s) analisado(s); cobertura ${sources.coverage.status}. Ausência na coleta não comprova inexistência quando a cobertura é partial ou unknown.`,
           source: {
             api: "local",
             endpoint: "/customer/index + /deals",
@@ -130,7 +137,7 @@ export function registerLeadOpsTools(server: McpServer, deps: ReadDeps): void {
     {
       title: "List recent opportunities",
       description:
-        "Lista oportunidades recentes via /deals e aplica filtros locais por data de criação, status, funil, etapa, responsável e busca textual.",
+        "Coleta até 20 páginas de oportunidades via /deals por padrão, filtra localmente e ordena por data de atualização, criação ou próxima ação. coverage delimita a coleta; com cobertura parcial, os resultados são recentes somente entre os registros coletados. limit/offset recortam a saída.",
       inputSchema: {
         createdFrom: z.string().min(1).optional(),
         createdTo: z.string().min(1).optional(),
@@ -155,7 +162,7 @@ export function registerLeadOpsTools(server: McpServer, deps: ReadDeps): void {
         const response = await deps.v2.scanDeals({
           entity: "OPPORTUNITY",
           pageSize: fetchLimit,
-          maxPages: input.maxPages,
+          maxPages: input.maxPages ?? 20,
           search: input.search
         });
         const data = listRecentOpportunitiesFromDeals({
@@ -178,7 +185,7 @@ export function registerLeadOpsTools(server: McpServer, deps: ReadDeps): void {
           ok: true,
           data: { ...data, coverage: response.coverage },
           warnings: [...data.warnings, ...response.warnings],
-          summary: `Recent opportunities: ${data.matchedTotal} oportunidade(s) dentro da janela buscada.`,
+          summary: `Recent opportunities: ${data.matchedTotal} correspondência(s) nos registros coletados; cobertura ${response.coverage.status}. Com cobertura partial, a ordem de recentes vale somente para essa coleta.`,
           source: {
             api: "v2",
             endpoint: "/deals?entity=OPPORTUNITY",
@@ -396,15 +403,25 @@ async function loadRecordSources(input: {
   customersResponse?: unknown;
   dealResponses: Array<{ entity: "LEAD" | "OPPORTUNITY"; response: unknown }>;
   warnings: string[];
+  coverage: { status: "complete" | "partial" | "unknown"; sources: RecordSourceCoverage[] };
 }> {
   const warnings: string[] = [];
+  const coverageSources: RecordSourceCoverage[] = [];
   const dealResponses: Array<{ entity: "LEAD" | "OPPORTUNITY"; response: unknown }> = [];
   let customersResponse: unknown;
 
   if (input.requestedEntities.includes("CUSTOMER")) {
     try {
-      customersResponse = await input.deps.v1.listCustomers();
+      const response = await input.deps.v1.listCustomers();
+      const rows = (response as { data?: { customers?: unknown } } | null)?.data?.customers;
+      if (!Array.isArray(rows) || !rows.every(row => row && typeof row === "object" && !Array.isArray(row))) {
+        throw new Error("Formato inesperado em /customer/index; não é seguro tratar a resposta como coleção vazia.");
+      }
+      customersResponse = response;
+      coverageSources.push({ entity: "CUSTOMER", status: "unknown", reason: "native_pagination_unverified" });
+      warnings.push("Cobertura de CUSTOMER desconhecida: paginação nativa de /customer/index não verificada.");
     } catch (error) {
+      coverageSources.push({ entity: "CUSTOMER", status: "partial", reason: "source_failed" });
       warnings.push(`Falha ao buscar customers em /customer/index: ${errorMessage(error)}`);
     }
   }
@@ -422,16 +439,27 @@ async function loadRecordSources(input: {
         search: firstCriteriaValue(input.criteria)
       });
       dealResponses.push({ entity, response });
+      coverageSources.push({ entity, ...response.coverage });
       warnings.push(...response.warnings);
     } catch (error) {
+      coverageSources.push({ entity, status: "partial", reason: "source_failed" });
       warnings.push(`Falha ao buscar ${entity} em /deals: ${errorMessage(error)}`);
     }
+  }
+
+  if (input.requestedEntities.includes("CONTACT")) {
+    coverageSources.push({ entity: "CONTACT", status: "partial", reason: "unsupported_entity" });
   }
 
   return {
     customersResponse,
     dealResponses,
-    warnings
+    warnings,
+    coverage: {
+      status: coverageSources.some(source => source.status === "partial") ? "partial"
+        : coverageSources.some(source => source.status === "unknown") ? "unknown" : "complete",
+      sources: coverageSources
+    }
   };
 }
 

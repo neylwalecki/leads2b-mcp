@@ -3,6 +3,7 @@ import { registerCalendarTools } from "./read/calendar.js";
 import { registerCatalogTools } from "./read/catalog.js";
 import { registerCustomerTools } from "./read/customers.js";
 import { registerEventTools } from "./read/events.js";
+import { registerHistoryTools } from "./read/history.js";
 import { registerLeadOpsTools } from "./read/lead-ops.js";
 import { registerPipelineTools } from "./read/pipelines.js";
 import { registerSnippetTools } from "./read/snippet.js";
@@ -12,6 +13,7 @@ export function registerReadTools(server: McpServer, deps: ReadDeps): void {
   registerCatalogTools(server, deps);
   registerPipelineTools(server, deps);
   registerCustomerTools(server, deps);
+  registerHistoryTools(server, deps);
   registerLeadOpsTools(server, deps);
   registerSnippetTools(server, deps);
   registerCalendarTools(server, deps);

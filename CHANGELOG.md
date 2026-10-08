@@ -4,6 +4,20 @@ Mudanças ainda não distribuídas ficam em `Unreleased`. Versões publicadas es
 
 ## [Unreleased]
 
+### Adicionado
+
+- `leads2b_list_history`: consulta somente leitura de histórico de lead ou oportunidade, com `limit`/`offset` enviados à API v1 e preservação do envelope integral. A paginação nativa e a cobertura total permanecem não verificadas.
+- Cobertura estruturada por fonte em `leads2b_find_records`, incluindo falhas, fontes desconhecidas e busca global de contatos indisponível.
+
+### Corrigido
+
+- Busca de registros e oportunidades recentes coletam até 20 páginas de deals por entidade por padrão, em vez de somente a primeira. Limites explícitos continuam respeitados; filtros e ordenação são aplicados à coleção coletada.
+- Resumos distinguem correspondências na coleta de cobertura completa. Resposta inválida de customers produz falha daquela fonte sem ocultar oportunidades obtidas com sucesso.
+
+### Migração
+
+`maxPages` aceita 1..20 e agora tem padrão 20 em `leads2b_find_records` e `leads2b_list_recent_opportunities`; `fetchLimit` mantém o padrão 100. A coleta pode realizar mais requisições. Informe um orçamento menor para reduzir consultas e confira `coverage` antes de concluir que um registro não existe. `limit`/`offset` continuam recortando somente a saída; aumentar `offset` não avança a coleta remota. `leads2b_scan_lead_ops` mantém seu padrão de 5 páginas.
+
 ## [0.4.2] - 2026-10-06
 
 ### Adicionado

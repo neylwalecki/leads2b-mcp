@@ -30,6 +30,7 @@ const V1_TOOLS = [
   "leads2b_list_team_users", "leads2b_list_pipeline_stages",
   "leads2b_get_customer_v1", "leads2b_get_contact", "leads2b_list_contacts", "leads2b_get_opportunity",
   "leads2b_get_logged_user",
+  "leads2b_list_history",
   "leads2b_list_origins",
   "leads2b_list_pipelines",
   "leads2b_get_dashboard_counts",

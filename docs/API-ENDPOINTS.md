@@ -156,7 +156,7 @@ As operações abaixo usam a API interna v1. Os contratos observados são instá
 | Perda de oportunidade | `PUT /opportunity/opportunityLost` | `id_opportunity`, `id_loss`, `exclusion_reason`; `cloning_opportunity`, `finishWorkflowInstances` e `reactivate_lead` falsos |
 | Anotação | `POST /history/index/` | Formulário no envelope `data`; `option=comment`, `message`, `receiver`, entidade e ID. Receiver é o usuário autenticado |
 | Atividade | `POST /history/index/` | `option=action`, `receiver`, `action`, `data`, `final_date`, `message`, `id_pipeline_item`; sem convite ou conclusão |
-| Releitura de histórico | `GET /history/index/` | `entity`, `id_entity`, `limit`, `offset`; releitura de até 25 entradas, sem comprovação automática de persistência |
+| Leitura de histórico | `GET /history/index/` | Endpoint observado; `leads2b_list_history` envia `entity`, `id_entity`, `limit`, `offset` e preserva a resposta integral. Paginação nativa e cobertura total não verificadas. A releitura após mutações solicita até 25 entradas, sem comprovação automática de persistência |
 | Campos personalizados | Detalhe de lead/oportunidade | Normalizador preserva `custom_columns`, além dos outros grupos; preenchimento depende da conta |
 
 A busca v2 de customers usa `/customer?search=...`. O frontend também passa `limit` e `offset`, mas o servidor ainda não depende dessa paginação remota: a saída é recortada localmente, com cobertura explícita.

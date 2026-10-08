@@ -18,6 +18,25 @@ Informe os resultados e a cobertura retornada. Se não houver resultado,
 consulte leads2b_find_customer com search="lead@example.com" e summaryOnly=true.
 ```
 
+## Buscar negócios além da primeira página
+
+```text
+Busque o ID 123 com leads2b_find_records, search="123", entities=["OPPORTUNITY"],
+maxPages=20 e limit=5. Informe matchedTotal, totalScanned e coverage.
+Se a cobertura estiver partial ou unknown, não conclua que o registro inexiste.
+Para o detalhe por ID, use leads2b_get_record_detail com entity="OPPORTUNITY",
+id=123 e includeAttribution=false. Preserve eventuais erros sem presumir sua causa.
+```
+
+## Ler o histórico
+
+```text
+Use leads2b_list_history com entity="OPPORTUNITY", id=123, limit=25 e offset=0.
+Preserve o envelope retornado e informe coverage. Se precisar de outra página,
+solicite offset=25 e compare os IDs das entradas. Pare se a resposta repetir
+a página anterior. Não presuma cobertura completa nem crie anotação ou atividade.
+```
+
 ## Ler campos personalizados
 
 ```text

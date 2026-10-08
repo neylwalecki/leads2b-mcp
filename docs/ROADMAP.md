@@ -6,6 +6,7 @@ O servidor concentra-se em consultas, atribuição e operações de CRM com sche
 
 - Consultas e CRUD de customers, contatos, leads e oportunidades.
 - Coleta paginada de negócios, filtros locais e cobertura da saída.
+- Busca de registros com cobertura por fonte e leitura de páginas do histórico com parâmetros enviados à API.
 - Normalização de origem e diagnóstico de atribuição.
 - Health check com catálogo, endpoints testados e requisitos de escrita separados.
 - Ganho/perda de oportunidades, anotações e atividades com contratos experimentais.
@@ -18,7 +19,7 @@ O servidor concentra-se em consultas, atribuição e operações de CRM com sche
 |---|---|
 | Paginação remota de customers | A saída usa recorte local; a semântica remota precisa de validação |
 | Contatos | Há detalhe e listagem por customer; não há busca global dedicada |
-| Histórico | Há criação de anotações/atividades e releitura limitada; não há conclusão de atividade ou envio de convite |
+| Histórico | Há leitura dedicada com paginação solicitada e criação de anotações/atividades; paginação nativa e cobertura total não verificadas. Não há conclusão de atividade ou envio de convite |
 | Encerramento de leads | Ganho/perda estão implementados somente para oportunidades |
 | Operações em lote e merges | Não há ferramentas dedicadas |
 | Transporte remoto | O servidor oferece somente STDIO |

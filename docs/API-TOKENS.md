@@ -26,7 +26,7 @@ Os campos do MCP recebem o token sem aspas, espaços extras ou o prefixo `Bearer
 
 ## Habilitar operações de leads e oportunidades
 
-CRUD de leads/oportunidades, ganho/perda e operações de histórico usam a API interna v1 e exigem um token que identifique um usuário autorizado. A chave de empresa e a chave por usuário têm escopos diferentes.
+Escritas de leads/oportunidades, ganho/perda e criação de anotações/atividades usam a API interna v1 e exigem um token que identifique um usuário autorizado. A leitura de histórico não exige contexto de usuário como pré-requisito do MCP; o acesso depende da API. A chave de empresa e a chave por usuário têm escopos diferentes.
 
 Para verificar a chave por usuário também na API interna v1, configure-a explicitamente em **Token API v1**, mantenha a escrita em `disabled` e execute o health check descrito abaixo. O rótulo “API V2” da plataforma não comprova, por si só, acesso aos endpoints internos v1; prossiga somente se o MCP confirmar autenticação e contexto de usuário. Se não confirmar, solicite ao suporte da Leads2b uma credencial compatível com a API interna v1 para o usuário responsável.
 
@@ -36,7 +36,7 @@ O MCP não copia nem troca os tokens entre os dois campos automaticamente. Mesmo
 
 1. Salve as configurações com `write_mode=disabled`.
 2. No cliente MCP, peça: “Execute `leads2b_health_check` e informe autenticação, contexto de usuário e restrições, sem exibir tokens”.
-3. Confira os endpoints testados em `apis.v1` e `apis.v2`. Um erro em `/users` não comprova falha em todos os endpoints v2. Para operações de negócios e histórico, confira também `apis.v1.userContext`.
+3. Confira os endpoints testados em `apis.v1` e `apis.v2`. Um erro em `/users` não comprova falha em todos os endpoints v2. Para escritas de negócios e histórico, confira também `apis.v1.userContext`.
 4. Faça uma consulta conhecida da conta. Autenticação válida não garante permissão em todos os endpoints.
 5. Use `preview` para conferir uma operação de escrita sem alterar registros. Ative `live` somente quando quiser executar alterações reais.
 

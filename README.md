@@ -11,7 +11,7 @@ Projeto independente, sem afiliação à Leads2b. Licença [MIT](LICENSE).
 | Empresas e pessoas | Listagem, busca, detalhe e CRUD de `CUSTOMER` |
 | Contatos | Listagem por customer, detalhe e CRUD |
 | Leads e oportunidades | Busca, detalhe, CRUD e alteração de funil, etapa e responsável |
-| Oportunidades e histórico | Ganho, perda com motivo, anotações e atividades; contratos experimentais |
+| Oportunidades e histórico | Leitura de páginas do histórico; ganho, perda com motivo, anotações e atividades com contratos experimentais |
 | Operação de leads | Coleta paginada, filtros, candidatos e cobertura explícita |
 | Atribuição | Conversões, tracking, UTMs, first/last touch observados e divergências |
 | Catálogos | Equipe, pipelines, etapas, origens, campos, tags e motivos de perda |
@@ -80,7 +80,7 @@ Passe as variáveis pelo cliente MCP ou copie `.env.example` para `.env` na past
 | `LEADS2B_API_V2_BASE_URL` | Base da API interna v2 | `https://app.leads2b.com/api/v2` |
 | `LEADS2B_PUBLIC_WORKER_URL` | Base do snippet público | `https://js.app.leads2b.com` |
 
-CRUD de leads/oportunidades e operações de histórico exigem uma credencial v1 com contexto de usuário. Uma chave de empresa pode permitir consultas e operações de customers/contatos sem atender a esse requisito. Confira `apis.v1.userContext` no health check. O servidor não troca tokens entre APIs automaticamente.
+Escritas em leads/oportunidades e no histórico exigem uma credencial v1 com contexto de usuário. Uma chave de empresa pode permitir consultas e operações de customers/contatos sem atender a esse requisito. A leitura de histórico não faz essa verificação prévia; a API decide o acesso. Confira `apis.v1.userContext` no health check. O servidor não troca tokens entre APIs automaticamente.
 
 ### Modos de escrita
 
