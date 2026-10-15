@@ -4,6 +4,7 @@ import { findCustomers, prepareCustomerListOutput } from "../../customers/list.j
 import { errorResult, okResult } from "../result.js";
 import { EntityIdSchema } from "../../crud/schemas.js";
 import { IdSchema, ReadDeps } from "./shared.js";
+import { readErrorResult } from "./failure.js";
 
 export function registerCustomerTools(server: McpServer, deps: ReadDeps): void {
   server.registerTool("leads2b_list_team_users", {
@@ -31,7 +32,11 @@ export function registerCustomerTools(server: McpServer, deps: ReadDeps): void {
       inputSchema: { id: EntityIdSchema }, annotations: { readOnlyHint: true }
     }, async ({ id }) => {
       try { return okResult({ ok: true, data: await tool.read(id), source: { api: "v1", endpoint: tool.path, stability: "observed" } }); }
-      catch (error) { return errorResult(error); }
+      catch (error) {
+        return tool.name === "leads2b_get_opportunity"
+          ? readErrorResult(error, { api: "v1", method: "GET", endpoint: `/opportunity/index/${id}`, entity: "OPPORTUNITY", id })
+          : errorResult(error);
+      }
     });
   }
   server.registerTool("leads2b_list_contacts", {

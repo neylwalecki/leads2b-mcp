@@ -126,6 +126,10 @@ A [referência OpenAPI](https://developers.leads2b.dev/api/openapi) consultada l
 
 `GET /deals` foi validado com `limit/offset` em páginas distintas. O parâmetro `search` foi ignorado no teste; o MCP aplica critérios locais sobre os registros coletados. A coleta detecta limites, páginas repetidas e mudanças de totais. Mesmo completa para a janela solicitada, não é snapshot atômico.
 
+### Acesso ao histórico e detalhe
+
+`GET /history/index/` e `GET /opportunity/index/{id}` podem falhar com uma chave de empresa mesmo quando `/deals` ou outros históricos respondem. Uma comparação controlada com credencial de usuário da mesma conta resolveu os casos comparados, sem alterar entidade, ID ou parâmetros. HTTP 400/500 isolados não confirmam essa causa. Não há fallback automático de tokens; veja o [diagnóstico e os limites da evidência](READ-ACCESS.md).
+
 ## Snippet público
 
 Base: `https://js.app.leads2b.com`

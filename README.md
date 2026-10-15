@@ -80,7 +80,7 @@ Passe as variáveis pelo cliente MCP ou copie `.env.example` para `.env` na past
 | `LEADS2B_API_V2_BASE_URL` | Base da API interna v2 | `https://app.leads2b.com/api/v2` |
 | `LEADS2B_PUBLIC_WORKER_URL` | Base do snippet público | `https://js.app.leads2b.com` |
 
-Escritas em leads/oportunidades e no histórico exigem uma credencial v1 com contexto de usuário. Uma chave de empresa pode permitir consultas e operações de customers/contatos sem atender a esse requisito. A leitura de histórico não faz essa verificação prévia; a API decide o acesso. Confira `apis.v1.userContext` no health check. O servidor não troca tokens entre APIs automaticamente.
+Escritas em leads/oportunidades e no histórico exigem uma credencial v1 com contexto de usuário. Uma chave de empresa pode permitir consultas e operações de customers/contatos sem atender a esse requisito. Leituras de histórico e detalhe de oportunidade também podem falhar conforme o registro com uma chave de empresa. Não há bloqueio prévio dessas leituras; a API decide o acesso. Confira `apis.v1.userContext` no health check e o [diagnóstico de acesso comercial](docs/READ-ACCESS.md). O servidor não troca tokens entre APIs automaticamente.
 
 ### Modos de escrita
 

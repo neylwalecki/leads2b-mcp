@@ -29,6 +29,27 @@ type ToolResult<T> = {
 
 Erros HTTP preservam status, endpoint e detalhes quando disponíveis. Falhas de mutação podem incluir `writeState` e releitura; confira a seção da operação antes de repetir a chamada.
 
+Falhas de `leads2b_list_history`, `leads2b_get_opportunity` e de `leads2b_get_record_detail` para `OPPORTUNITY` acrescentam `readState` e `warnings`, mantendo `ok=false`, `isError=true` e o erro original:
+
+```ts
+readState: {
+  outcome: "unavailable";
+  request: {
+    api: "v1";
+    method: "GET";
+    endpoint: string;
+    entity: "LEAD" | "OPPORTUNITY";
+    id: string | number;
+    limit?: number;
+    offset?: number;
+  };
+  coverage: { status: "unknown"; reason: "request_failed" };
+  userContext: "unverified";
+}
+```
+
+Não há `data` substituto ou leitura adicional automática para diagnosticar a falha. `userContext="unverified"` informa que a chamada não consultou o usuário, não que o token perdeu esse contexto. Em HTTP 400/500, o aviso orienta conferir `leads2b_health_check.apis.v1.userContext`, sem atribuir a causa pelo status. Consulte o [procedimento de diagnóstico](READ-ACCESS.md).
+
 ## Health
 
 | Ferramenta | Finalidade |
@@ -102,7 +123,7 @@ O health testa somente `GET v1 /user/logged/` e `GET v2 /users` (mais `/latest` 
 
 O retorno é `{response, coverage}`. `response` preserva integralmente o envelope da API; `coverage.requested` informa o `limit` e o `offset` solicitados. `coverage.status="unknown"` e `reason="native_pagination_unverified"` indicam que o servidor não confirmou se a API respeita esses parâmetros nem se a página esgota o histórico. Não há `nextOffset` calculado nem interpretação de formatos desconhecidos como lista vazia. Para consultar outra página, informe o offset desejado e compare as entradas recebidas antes de concluir que a paginação avançou.
 
-A leitura usa um endpoint interno observado, sujeito a mudanças. Não há bloqueio prévio por contexto de usuário; erros de acesso ou do servidor são preservados. As ferramentas de criação de anotação/atividade continuam sujeitas ao modo de escrita e aos seus pré-requisitos.
+A leitura usa um endpoint interno observado, sujeito a mudanças. Não há bloqueio prévio por contexto de usuário; erros de acesso ou do servidor são preservados. Uma chave de empresa pode ler alguns históricos e falhar em outros; o detalhe de oportunidade também pode depender do contexto. Sucesso parcial não valida acesso aos demais registros. As ferramentas de criação de anotação/atividade continuam sujeitas ao modo de escrita e aos seus pré-requisitos.
 
 ## Operação comercial de leads
 

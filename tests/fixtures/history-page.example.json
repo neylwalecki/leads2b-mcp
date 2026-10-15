@@ -1,0 +1,24 @@
+[
+  {
+    "id": "901",
+    "entity": "OPPORTUNITY",
+    "id_entity": "123",
+    "history_type": "comment",
+    "is_automatic": "0",
+    "history_message": "Example note",
+    "message_date_sql": "2026-01-02 10:00:00",
+    "parameters": "{\"total_value\":\"1250.50\"}",
+    "user_name": "Example User"
+  },
+  {
+    "id": "900",
+    "entity": "OPPORTUNITY",
+    "id_entity": "123",
+    "history_type": "comment",
+    "is_automatic": "1",
+    "history_message": "Example event",
+    "message_date_sql": "2026-01-01 10:00:00",
+    "parameters": null,
+    "user_name": "Example User"
+  }
+]

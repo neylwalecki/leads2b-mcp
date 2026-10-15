@@ -1,7 +1,8 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { EntityIdSchema } from "../../crud/schemas.js";
-import { errorResult, okResult } from "../result.js";
+import { okResult } from "../result.js";
+import { readErrorResult } from "./failure.js";
 import type { ReadDeps } from "./shared.js";
 
 export function registerHistoryTools(server: McpServer, deps: ReadDeps): void {
@@ -29,6 +30,10 @@ export function registerHistoryTools(server: McpServer, deps: ReadDeps): void {
         warnings: ["limit/offset são solicitados à API; respeitar esses parâmetros e esgotar o histórico não foram verificados. Não interprete ausência como histórico vazio."],
         source: { api: "v1", endpoint: "/history/index/", stability: "observed" }
       });
-    } catch (error) { return errorResult(error); }
+    } catch (error) {
+      return readErrorResult(error, {
+        api: "v1", method: "GET", endpoint: "/history/index/", entity, id, limit, offset
+      });
+    }
   });
 }

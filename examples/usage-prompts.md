@@ -37,6 +37,16 @@ solicite offset=25 e compare os IDs das entradas. Pare se a resposta repetir
 a página anterior. Não presuma cobertura completa nem crie anotação ou atividade.
 ```
 
+## Investigar falha de leitura comercial
+
+```text
+Se leads2b_list_history ou o detalhe de OPPORTUNITY falhar, preserve o erro e
+readState. Execute leads2b_health_check e confira apis.v1.userContext.
+Não presuma que HTTP 400 significa ID inválido ou que HTTP 500 é ausência de dado.
+Não troque entidade, ID ou token automaticamente. Informe a cobertura como
+desconhecida e não infira ganho, perda, motivo de perda ou valor zero.
+```
+
 ## Ler campos personalizados
 
 ```text

@@ -26,7 +26,7 @@ Os campos do MCP recebem o token sem aspas, espaços extras ou o prefixo `Bearer
 
 ## Habilitar operações de leads e oportunidades
 
-Escritas de leads/oportunidades, ganho/perda e criação de anotações/atividades usam a API interna v1 e exigem um token que identifique um usuário autorizado. A leitura de histórico não exige contexto de usuário como pré-requisito do MCP; o acesso depende da API. A chave de empresa e a chave por usuário têm escopos diferentes.
+Escritas de leads/oportunidades, ganho/perda e criação de anotações/atividades usam a API interna v1 e exigem um token que identifique um usuário autorizado. A leitura de histórico não exige contexto de usuário como pré-requisito do MCP; o acesso depende da API. Uma chave de empresa pode retornar histórico para alguns registros e HTTP 400 para outros, além de HTTP 500 no detalhe de oportunidade. Esses status isolados não confirmam a causa. A chave de empresa e a chave por usuário têm escopos diferentes. Consulte o [diagnóstico de acesso comercial](READ-ACCESS.md) antes de mudar a configuração.
 
 Para verificar a chave por usuário também na API interna v1, configure-a explicitamente em **Token API v1**, mantenha a escrita em `disabled` e execute o health check descrito abaixo. O rótulo “API V2” da plataforma não comprova, por si só, acesso aos endpoints internos v1; prossiga somente se o MCP confirmar autenticação e contexto de usuário. Se não confirmar, solicite ao suporte da Leads2b uma credencial compatível com a API interna v1 para o usuário responsável.
 

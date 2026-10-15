@@ -6,6 +6,7 @@ Mudanças ainda não distribuídas ficam em `Unreleased`. Versões publicadas es
 
 ### Adicionado
 
+- Falhas de histórico e detalhe de oportunidade incluem `readState` com requisição, cobertura desconhecida e contexto de usuário não verificado. Erros HTTP 400/500 orientam diagnóstico sem trocar tokens ou repetir consultas automaticamente.
 - `leads2b_list_history`: consulta somente leitura de histórico de lead ou oportunidade, com `limit`/`offset` enviados à API v1 e preservação do envelope integral. A paginação nativa e a cobertura total permanecem não verificadas.
 - Cobertura estruturada por fonte em `leads2b_find_records`, incluindo falhas, fontes desconhecidas e busca global de contatos indisponível.
 

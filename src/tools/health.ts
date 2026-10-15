@@ -117,7 +117,7 @@ export function registerHealthTool(server: McpServer, deps: HealthDeps): void {
         ...(snippetHealth?.ok ? [{ api: "snippet", method: "GET", endpoint: "/latest" }] : [])
       ];
       const warnings: string[] = [];
-      if (v1Health.ok && !v1Health.userContext) warnings.push("API v1 respondeu sem contexto de usuário; CRUD de leads/oportunidades exige token v1 de usuário autorizado.");
+      if (v1Health.ok && !v1Health.userContext) warnings.push("API v1 respondeu sem contexto de usuário; CRUD de leads/oportunidades exige token v1 de usuário autorizado. Leitura de histórico e detalhe de oportunidade também pode falhar conforme o registro; sucesso em uma consulta não comprova acesso aos demais.");
 
       if (!deps.config.apiV1Token) {
         warnings.push("LEADS2B_API_V1_TOKEN não configurado; leituras v1 não podem executar, mas continuam registradas.");

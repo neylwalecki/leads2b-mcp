@@ -1,6 +1,7 @@
 import { scanLeadOps } from "../../lead-ops/scan.js";
 import { loadAttributionForRecords } from "../../lead-ops/attribution.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { readErrorResult } from "./failure.js";
 import { z } from "zod";
 import { diagnoseAttributionBatch } from "../../attribution/batch.js";
 import { Leads2bEntity } from "../../attribution/normalize.js";
@@ -245,7 +246,9 @@ export function registerLeadOpsTools(server: McpServer, deps: ReadDeps): void {
           source: sourceForRecordDetail(entity as LeadOpsEntity)
         });
       } catch (error) {
-        return errorResult(error);
+        return entity === "OPPORTUNITY"
+          ? readErrorResult(error, { api: "v1", method: "GET", endpoint: `/opportunity/index/${id}`, entity, id })
+          : errorResult(error);
       }
     }
   );
