@@ -138,6 +138,7 @@ Importe `leads2b-mcp/lead-ops` após instalar o pacote local. Essa entrada expor
 
 - [Ferramentas, schemas e resultados](docs/MCP-TOOLS.md)
 - [Tokens e autenticação](docs/API-TOKENS.md)
+- [Diagnóstico de acesso comercial](docs/READ-ACCESS.md)
 - [Configuração no Codex e transporte no ChatGPT](docs/CHATGPT-CODEX.md)
 - [Endpoints e estabilidade](docs/API-ENDPOINTS.md)
 - [Atribuição e origem](docs/ATRIBUICAO-E-ORIGEM.md)

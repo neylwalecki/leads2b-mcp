@@ -123,6 +123,8 @@ O health testa somente `GET v1 /user/logged/` e `GET v2 /users` (mais `/latest` 
 
 O retorno é `{response, coverage}`. `response` preserva integralmente o envelope da API; `coverage.requested` informa o `limit` e o `offset` solicitados. `coverage.status="unknown"` e `reason="native_pagination_unverified"` indicam que o servidor não confirmou se a API respeita esses parâmetros nem se a página esgota o histórico. Não há `nextOffset` calculado nem interpretação de formatos desconhecidos como lista vazia. Para consultar outra página, informe o offset desejado e compare as entradas recebidas antes de concluir que a paginação avançou.
 
+Os valores brutos de `entity` também são preservados: eventos de e-mail podem usar `opportunity` em vez de `OPPORTUNITY`. Confira o alias e `id_entity` no consumidor; o MCP não normaliza nem descarta esses eventos.
+
 A leitura usa um endpoint interno observado, sujeito a mudanças. Não há bloqueio prévio por contexto de usuário; erros de acesso ou do servidor são preservados. Uma chave de empresa pode ler alguns históricos e falhar em outros; o detalhe de oportunidade também pode depender do contexto. Sucesso parcial não valida acesso aos demais registros. As ferramentas de criação de anotação/atividade continuam sujeitas ao modo de escrita e aos seus pré-requisitos.
 
 ## Operação comercial de leads

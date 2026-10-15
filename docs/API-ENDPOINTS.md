@@ -128,7 +128,9 @@ A [referência OpenAPI](https://developers.leads2b.dev/api/openapi) consultada l
 
 ### Acesso ao histórico e detalhe
 
-`GET /history/index/` e `GET /opportunity/index/{id}` podem falhar com uma chave de empresa mesmo quando `/deals` ou outros históricos respondem. Uma comparação controlada com credencial de usuário da mesma conta resolveu os casos comparados, sem alterar entidade, ID ou parâmetros. HTTP 400/500 isolados não confirmam essa causa. Não há fallback automático de tokens; veja o [diagnóstico e os limites da evidência](READ-ACCESS.md).
+`GET /history/index/` e `GET /opportunity/index/{id}` podem exigir contexto de usuário na credencial v1, mesmo quando uma chave de empresa permite consultar `/deals` ou outros históricos. Confira `apis.v1.userContext` no health check e valide o registro desejado. HTTP 400/500 isolados não confirmam a causa; não há fallback automático de tokens. Veja o [diagnóstico de acesso comercial](READ-ACCESS.md).
+
+O envelope bruto do histórico pode conter `entity="opportunity"` em eventos de e-mail e `OPPORTUNITY` em outros eventos. A ferramenta não altera a capitalização; consumidores devem conferir entidade e `id_entity` antes de usar o evento.
 
 ## Snippet público
 
