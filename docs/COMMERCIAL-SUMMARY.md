@@ -32,7 +32,7 @@ Apresente ao operador uma escolha explícita:
 
 As duas operações respeitam `LEADS2B_WRITE_MODE`. Em `disabled`, as ferramentas não são registradas. Em `preview`, retornam apenas o plano, sem consulta ao usuário ou ao histórico. Em `live`, o MCP primeiro lê até 100 entradas do histórico, e também as atividades quando a operação é uma ação. Envelope ilegível ou possível duplicidade por texto e campos bloqueia o POST com `outcome=not_sent`. Se a pré-leitura for válida, uma única chamada pode ser enviada, sem retry automático. A resposta HTTP aceita não comprova persistência.
 
-Depois de uma gravação em `live`, releia até 100 entradas do histórico e, para atividade, a lista de atividades. `verification.status="observed"` só é emitido quando o ID retornado corresponde a uma ocorrência única no recorte, entidade, ID da oportunidade, texto integral e campos pertinentes conferem e a atividade aparece como pendente. A unicidade global permanece `unverified`, pois a paginação v1 não foi validada. Envelopes desconhecidos ficam `unconfirmed`. Uma releitura ausente ou ambígua exige conciliação antes de qualquer nova chamada. Não repita automaticamente uma mutação que possa ter sido aceita.
+Depois de uma gravação em `live`, releia até 100 entradas do histórico e, para atividade, a lista de atividades. `verification.status="observed"` só é emitido quando o ID retornado corresponde a uma ocorrência única no recorte, entidade, ID da oportunidade, texto integral e campos pertinentes conferem e a atividade aparece como pendente. Na lista enxuta de planejadas, confira o mesmo ID e data, além de ausência de fechamento. O histórico fornece alvo, texto, tipo, responsável e estado pendente. A unicidade global permanece `unverified`, pois a paginação v1 não foi validada. Envelopes desconhecidos ficam `unconfirmed`. Uma releitura ausente ou ambígua exige conciliação antes de qualquer nova chamada. Não repita automaticamente uma mutação que possa ter sido aceita.
 
 ## Piloto separado
 
@@ -40,9 +40,7 @@ Uma gravação real exige autorização anterior para uma conta de teste, uma op
 
 A conta de produção permanece somente leitura durante a implementação e os testes locais. A leitura da fila ou de um histórico não autoriza nem comprova criação.
 
-## Lacunas e backlog
-
-### P0 entregue neste fluxo
+## Cobertura da P0
 
 - Chats por entidade e oportunidade, detalhe do chat e mensagens paginadas, com vínculo explícito e preservação de metadados.
 - Campos de mídia, payload e transcrição que já vierem nas mensagens são preservados no retorno, sem download ou transcrição nova.
@@ -50,20 +48,8 @@ A conta de produção permanece somente leitura durante a implementação e os t
 - Catálogos de ações e responsáveis ativos para conferência antes de uma atividade.
 - Escolha explícita entre nota e atividade, com write-mode e releitura conservadora.
 
-### P1
+## Cobertura dos lotes seguintes
 
-- Validar histórico entre sessões de um chat quando houver caso não vazio e vínculo inequívoco.
-- Investigar canais e fila de conversas somente leitura, sem expor links de autenticação.
-- Validar fila de atividades e agenda com filtros e cobertura próprios, mantendo atividade do CRM separada de evento de calendário.
-- Isolar reagendamento, conclusão e remoção de atividades em contratos próprios, sem generalizar edição para todo histórico.
+A [matriz de cobertura](COVERAGE-MATRIX.md) registra as consultas P1, P2 e P3, os contratos reutilizados, os testes e as lacunas de escrita. O histórico entre sessões valida o detalhe de cada referência antes de retornar dados. A leitura de mensagens sinaliza áudio identificado sem texto de transcrição em `mediaCoverage`.
 
-### P2
-
-- Diagnosticar jornadas, agentes e insights por oportunidade após o piloto de resumo.
-
-### P3
-
-- Relatórios, painéis, formulários, landing pages, prospecção, segmentações, e-mail e módulos de arquivos somente quando houver uma decisão operacional concreta.
-- Qualquer ação de envio, reação, atribuição, exclusão ou agendamento de chat exige escopo e validação separados.
-
-Rotas internas observadas são experimentais. O fluxo não replica o aplicativo e não cria um orquestrador de IA.
+Rotas internas observadas são experimentais. O fluxo mantém a preparação do resumo no cliente MCP.

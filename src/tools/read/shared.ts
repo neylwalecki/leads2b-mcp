@@ -11,9 +11,9 @@ export type ReadDeps = {
 
 export const EntitySchema = z.enum(["LEAD", "CONTACT", "OPPORTUNITY"]);
 export const IdSchema = z.union([z.string().min(1), z.number()]);
-export const PipelineEntitySchema = z.enum(["LEAD", "OPPORTUNITY"]);
+export const PipelineEntitySchema = z.enum(["LEAD", "OPPORTUNITY", "AFTER_SALE"]);
 export const LossEntitySchema = z.enum(["OPPORTUNITY"]);
-export const SegmentationEntitySchema = z.enum(["CUSTOMER", "LEAD", "OPPORTUNITY"]);
+export const SegmentationEntitySchema = z.enum(["CUSTOMER", "LEAD", "OPPORTUNITY", "COMPANIES"]);
 
 export function registerSimpleReadTool(
   server: McpServer,

@@ -121,6 +121,25 @@ it.each(["receiver", "action", "data", "final_date", "status"])("does not confir
   expect((await call("activity")).structuredContent).toMatchObject({ data: { verification: { status: "unconfirmed", activities: { confirmed: false } } } });
 });
 
+it.each([false, true])("reconciles the observed brief activity row and full history (closed=%s)", async closed => {
+  const id = fixtures.activity.id;
+  const event = {
+    id, entity: "opportunity", id_entity: "123", history_type: "action",
+    history_message: activity.message, id_user_to: "7", id_action: "2", action_name: "Example follow-up",
+    action_date: "localized date", action_date_sql: activity.data, final_date: activity.final_date, status: "pending"
+  };
+  const planned = { id, action_date: activity.data, action_name: event.action_name, close_date: closed ? activity.data : null };
+  const mock = mockApi("activity", { after: [event], planned: [planned] });
+  await setup();
+  const result = await call("activity");
+  expect(mock.posts()).toBe(1);
+  expect(result.structuredContent).toMatchObject({ data: { verification: {
+    status: closed ? "unconfirmed" : "observed",
+    history: { confirmed: true, fields: { receiver: true, action: true, data: true } },
+    activities: { confirmed: !closed, fields: { pending: !closed, action_name: true, data: true } }
+  } } });
+});
+
 it("preserves ambiguous write, requested payload and observed occurrence without retrying", async () => {
   const mock = mockApi("note", { failWrite: true }); await setup(); const result = await call("note");
   expect(result.isError).toBe(true); expect(mock.posts()).toBe(1);

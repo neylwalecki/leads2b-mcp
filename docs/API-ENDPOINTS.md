@@ -1,6 +1,6 @@
 # Endpoints
 
-Referência dos endpoints utilizados pelo MCP. As tabelas de leitura refletem observações de 08/09/2026; operações experimentais foram adicionadas em 05/10/2026.
+Referência dos endpoints utilizados pelo MCP. As observações iniciais são de 08/09/2026. A [matriz de cobertura](COVERAGE-MATRIX.md) registra contratos operacionais e validações de 12/11/2026.
 
 Status indica a evidência técnica disponível, não uma garantia de acesso em toda conta. HTTP 200 e lista vazia não comprovam contexto de usuário nem cobertura completa.
 
@@ -53,10 +53,10 @@ Base: `https://app.leads2b.com/api/v1`
 | `/chrome_extension/users` | GET | Confirmado | Usuários para extensão Chrome. |
 | `/dashboard/pending_action_count/` | GET | Não confirmado | Falhou com HTTP 500. |
 | `/custom_table/simple_tables` | GET | Não confirmado | Falhou com HTTP 500. |
-| `/schedule/index/` | GET | Não confirmado | Falhou com HTTP 500. |
-| `/schedule/count/` | GET | Não confirmado | Falhou com HTTP 500. |
+| `/schedule/index/` | GET | Experimental | Fila comercial. Paginação `pagination[page]` e `pagination[perPage]`, com filtros de responsável e data. |
+| `/schedule/count/` | GET | Experimental | Contador da fila, com os mesmos filtros. |
 | `/globalSearch/searchV2/` | GET | Não confirmado | Falhou com HTTP 500/400. |
-| `/pipeline/kanbanData/{id}` | GET | Não confirmado | Falhou com HTTP 500. |
+| `/pipeline/kanbanData/{id}` | GET | Experimental | Página por coluna, com `page` e `limitPage`. |
 
 ## API v2
 
@@ -84,7 +84,8 @@ Base: `https://app.leads2b.com/api/v2`
 | `/conversions` | GET | Confirmado | Conversões por `id` e `entity`. |
 | `/conversions/tracking` | GET | Confirmado | Tracking por `id` e `entity`. |
 | `/users/filters?name=leadsColumns` | GET | Confirmado | Filtro salvo de colunas. |
-| `/deals/lead-inbox` | GET | Não confirmado | Falhou com HTTP 404. |
+| `/deals/lead-inbox` | POST | Experimental | Busca da Caixa de Leads. Contrato observado no frontend. GET retornou 404 no diagnóstico anterior. |
+| `/markets/lists/search` | POST | Experimental | Busca de listas de prospecção. Contrato observado no frontend. |
 | `/deals/{id}` | GET | Não confirmado | Falhou com HTTP 404 nos probes. |
 | `/contacts` | GET/OPTIONS | Não confirmado | Falhou com HTTP 404 nos probes. |
 | `/leads` | GET/OPTIONS | Não confirmado | Falhou com HTTP 404 nos probes. |

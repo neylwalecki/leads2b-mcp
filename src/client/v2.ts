@@ -2,7 +2,7 @@ import { scanDeals, type DealScanInput } from "./deals.js";
 import { Leads2bEntity } from "../attribution/normalize.js";
 import { Leads2bHttpClient, Leads2bHttpMethod, Leads2bRequestOptions } from "./http.js";
 
-export type Leads2bSegmentationEntity = "CUSTOMER" | "LEAD" | "OPPORTUNITY";
+export type Leads2bSegmentationEntity = "CUSTOMER" | "LEAD" | "OPPORTUNITY" | "COMPANIES";
 export type Leads2bDealEntity = "LEAD" | "OPPORTUNITY";
 export type Leads2bChatEntity = "opportunity";
 export type Leads2bChatOrder = "asc" | "desc";

@@ -158,6 +158,7 @@ Importe `leads2b-mcp/lead-ops` após instalar o pacote local. Essa entrada expor
 - [Dependências e empacotamento](docs/DEPENDENCY-AUDIT.md)
 - [Cobertura e evolução](docs/ROADMAP.md)
 - [Fluxo de resumo comercial](docs/COMMERCIAL-SUMMARY.md)
+- [Matriz de cobertura operacional](docs/COVERAGE-MATRIX.md)
 - [Changelog](CHANGELOG.md)
 
 ## Contribuição

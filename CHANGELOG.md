@@ -15,7 +15,12 @@ Mudanças ainda não distribuídas ficam em `Unreleased`. Versões publicadas es
 - Guia e demonstração offline do resumo comercial com escolha entre nota e atividade e piloto separado para uma gravação sintética autorizada.
 - Cobertura estruturada por fonte em `leads2b_find_records`, incluindo falhas, fontes desconhecidas e busca global de contatos indisponível.
 
+- Consultas operacionais P1 a P3 para caixa de conversas, canais, fila comercial, atividades por etapa, cadastros, jornadas, agentes, insights, formulários, landing pages, prospecção, painéis, relatórios, anexos, orçamentos e telefonia. A Caixa de Leads e as listas de prospecção têm POSTs de consulta dedicados.
+- Histórico entre chats confere o vínculo de cada referência. A leitura de mensagens indica áudio identificado sem texto de transcrição.
+
 ### Corrigido
+
+- O detalhe do chat reconhece o envelope `{chat}` devolvido pela V2. A verificação de atividade concilia os campos do histórico com a linha enxuta da lista de planejadas.
 
 - Busca de registros e oportunidades recentes coletam até 20 páginas de deals por entidade por padrão, em vez de somente a primeira. Limites explícitos continuam respeitados; filtros e ordenação são aplicados à coleção coletada.
 - Resumos distinguem correspondências na coleta de cobertura completa. Resposta inválida de customers produz falha daquela fonte sem ocultar oportunidades obtidas com sucesso.

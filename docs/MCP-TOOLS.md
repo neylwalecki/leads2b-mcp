@@ -157,6 +157,10 @@ Antes de ler mensagens, a ferramenta solicita `GET /messages/chats/{chatId}` e v
 
 Esta coleta por offset não usa snapshot atômico. `complete` descreve o fim observado nessa coleta, sem garantir uma coleção imutável enquanto novas mensagens chegam. `nextOffset` permite retomar uma leitura parcial, mas unir recortes de momentos diferentes não comprova cobertura completa.
 
+## Consultas operacionais P1 a P3
+
+A [matriz de cobertura](COVERAGE-MATRIX.md) lista cada ferramenta por função, endpoint, método, teste e limite. Consultas paginadas experimentais devolvem `{response, coverage}`. A cobertura fica desconhecida quando a paginação nativa ainda não está comprovada. As ferramentas dedicadas da Caixa de Leads e de busca de listas de prospecção usam POST com payload tipado e anotação de leitura. Chamadas pela ferramenta bruta seguem o modo de escrita.
+
 ## Operação comercial de leads
 
 Ferramentas de coleta e busca para automações, planilhas e relatórios.

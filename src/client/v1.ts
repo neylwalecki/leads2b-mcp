@@ -59,7 +59,7 @@ export class Leads2bV1Client {
     };
   }
 
-  listPipelinesByEntity(input: { entity: Leads2bPipelineEntity }): Promise<unknown> {
+  listPipelinesByEntity(input: { entity: Leads2bPipelineEntity | "AFTER_SALE" }): Promise<unknown> {
     return this.http.get(`/pipeline/byEntity/${input.entity}`);
   }
 
@@ -67,8 +67,9 @@ export class Leads2bV1Client {
     return this.http.get("/user/users_by_access_level");
   }
 
-  listTeamUsers(): Promise<unknown> {
-    return this.http.get("/user/all");
+  listTeamUsers(input: { includeInactives?: boolean } = {}): Promise<unknown> {
+    if (input.includeInactives === undefined) return this.http.get("/user/all");
+    return this.http.get("/user/all", { query: { include_inactives: input.includeInactives } });
   }
 
   listPipelineResponsibleUsers(input: { pipelineId: string | number }): Promise<unknown> {

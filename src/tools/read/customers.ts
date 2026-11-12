@@ -9,9 +9,10 @@ import { readErrorResult } from "./failure.js";
 export function registerCustomerTools(server: McpServer, deps: ReadDeps): void {
   server.registerTool("leads2b_list_team_users", {
     description: "Lista usuários internos da equipe via v1 /user/all para identificar responsáveis por negócios. Não confunda com usuários de portal da v2.",
+    inputSchema: { includeInactives: z.boolean().optional() },
     annotations: { readOnlyHint: true }
-  }, async () => {
-    try { return okResult({ ok: true, data: await deps.v1.listTeamUsers(), source: { api: "v1", endpoint: "/user/all", stability: "observed" } }); }
+  }, async ({ includeInactives }) => {
+    try { return okResult({ ok: true, data: await deps.v1.listTeamUsers({ includeInactives }), source: { api: "v1", endpoint: "/user/all", stability: "observed" } }); }
     catch (error) { return errorResult(error); }
   });
   server.registerTool("leads2b_list_pipeline_stages", {

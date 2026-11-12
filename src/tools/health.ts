@@ -7,6 +7,8 @@ import { okResult } from "./result.js";
 import { RAW_API_TOOL_NAME } from "./raw-api.js";
 import { DEAL_ACTION_TOOL_NAMES } from "./deal-actions.js";
 import { WRITE_TOOL_NAMES } from "./write.js";
+import { operationalReadToolNames } from "./read/operational.js";
+import { CHAT_HISTORY_TOOL } from "./read/chats.js";
 
 type HealthDeps = {
   config: Leads2bConfig;
@@ -55,7 +57,7 @@ const V1_TOOLS = [
 ];
 
 const V2_TOOLS = [
-  "leads2b_list_chats", "leads2b_get_chat", "leads2b_list_chat_messages",
+  "leads2b_list_chats", "leads2b_get_chat", "leads2b_list_chat_messages", CHAT_HISTORY_TOOL,
   "leads2b_list_users",
   "leads2b_list_webhooks",
   "leads2b_list_cnaes",
@@ -110,7 +112,7 @@ export function registerHealthTool(server: McpServer, deps: HealthDeps): void {
         ? registeredWrites.filter(name => v1Health.userContext || /_(customer|contact)$/.test(name)) : [];
       const availableWrites = [...previewTools, ...livePrerequisitesMetTools];
       const registeredTools = [
-        ...LOCAL_TOOLS, ...V1_TOOLS, ...V2_TOOLS, ...CROSS_API_TOOLS,
+        ...LOCAL_TOOLS, ...V1_TOOLS, ...V2_TOOLS, ...CROSS_API_TOOLS, ...operationalReadToolNames,
         ...registeredWrites, ...(deps.config.rawApiEnabled ? [RAW_API_TOOL_NAME] : [])
       ];
       const verifiedCapabilities = [

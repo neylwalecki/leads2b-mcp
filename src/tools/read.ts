@@ -6,6 +6,7 @@ import { registerCustomerTools } from "./read/customers.js";
 import { registerEventTools } from "./read/events.js";
 import { registerHistoryTools } from "./read/history.js";
 import { registerLeadOpsTools } from "./read/lead-ops.js";
+import { registerOperationalReadTools } from "./read/operational.js";
 import { registerPipelineTools } from "./read/pipelines.js";
 import { registerSnippetTools } from "./read/snippet.js";
 import { ReadDeps } from "./read/shared.js";
@@ -20,4 +21,5 @@ export function registerReadTools(server: McpServer, deps: ReadDeps): void {
   registerSnippetTools(server, deps);
   registerCalendarTools(server, deps);
   registerEventTools(server, deps);
+  registerOperationalReadTools(server, deps);
 }

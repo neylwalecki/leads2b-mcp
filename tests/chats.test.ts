@@ -62,7 +62,7 @@ describe("experimental V2 chat reads", () => {
   it("reads chat detail and checks an explicitly supplied entity context", async () => {
     globalThis.fetch = async url => {
       expect(String(url)).toBe("https://example.com/api/v2/messages/chats/501");
-      return Response.json(chatDetail);
+      return Response.json({ chat: chatDetail });
     };
     await connect();
 
@@ -73,7 +73,7 @@ describe("experimental V2 chat reads", () => {
 
     expect(result.structuredContent).toMatchObject({
       ok: true,
-      data: { response: chatDetail, chat: chatDetail, scope: {
+      data: { response: { chat: chatDetail }, chat: { chat: chatDetail }, scope: {
         requested: { entity: "OPPORTUNITY", entityId: 123 }, verified: "confirmed", observedEntityId: "123"
       } }
     });
@@ -270,4 +270,56 @@ it.each([
   const data = (result.structuredContent as { data: { messages: unknown[]; pages: unknown[] } }).data;
   expect(data.messages).toHaveLength(count);
   expect(data.pages).toHaveLength(reason === "request_failed" ? pageIndex - 1 : pageIndex);
+});
+
+it("returns only prior-session references whose details prove the same opportunity", async () => {
+  const requests: string[] = [];
+  const prior = { id: "503", last_message: "Synthetic previous session" };
+  const responses: Record<string, unknown> = {
+    "/api/v2/messages/chats/501": { chat: chatDetail },
+    "/api/v2/messages/chats/501/history?limit=10&offset=0": {
+      chats: [prior, prior, { id: "501" }, { id: 504, last_message: "Synthetic foreign session" }, { id: 505 }, { id: "bad" }], count: 6
+    },
+    "/api/v2/messages/chats/503": { chat: { ...chatDetail, id: 503 } },
+    "/api/v2/messages/chats/504": { chat: { ...chatDetail, id: 504, id_entity: 999 } },
+    "/api/v2/messages/chats/505": { chat: { id: 505, phone: "0000000000" } }
+  };
+  globalThis.fetch = async (url, init) => {
+    const parsed = new URL(String(url));
+    const key = parsed.pathname + parsed.search;
+    requests.push(key);
+    expect(init?.method).toBe("GET");
+    if (!(key in responses)) throw new Error("Unexpected GET");
+    return Response.json(responses[key]);
+  };
+  await connect();
+  const result = await client.callTool({ name: "leads2b_list_chat_history", arguments: { chatId: 501, entityId: 123 } });
+  expect(result.structuredContent).toMatchObject({ data: { chats: [prior], coverage: {
+    status: "partial", referencesReceived: 6, unverified: 3, duplicateOrCurrent: 2
+  } } });
+  expect(JSON.stringify(result)).not.toContain("Synthetic foreign session");
+  expect(requests).toEqual(Object.keys(responses));
+});
+
+it("does not query history when the source chat belongs to another opportunity", async () => {
+  const paths: string[] = [];
+  globalThis.fetch = async url => { paths.push(new URL(String(url)).pathname); return Response.json({ chat: chatDetail }); };
+  await connect();
+  const result = await client.callTool({ name: "leads2b_list_chat_history", arguments: { chatId: 501, entityId: 999 } });
+  expect(result.isError).toBe(true);
+  expect(paths).toEqual(["/api/v2/messages/chats/501"]);
+});
+
+it("marks recognized audio without transcript while retaining the original message", async () => {
+  const audio = { ...message, file_name: "example.ogg", transcription: null, transcription_text: " " };
+  globalThis.fetch = async url => {
+    const parsed = new URL(String(url));
+    if (!parsed.pathname.endsWith("/messages")) return Response.json({ chat: chatDetail });
+    return Response.json({ messages: parsed.searchParams.get("offset") === "0" ? [audio] : [] });
+  };
+  await connect();
+  const result = await client.callTool({ name: "leads2b_list_chat_messages", arguments: { chatId: 501, entityId: 123 } });
+  expect(result.structuredContent).toMatchObject({ data: {
+    messages: [audio], mediaCoverage: { audioWithoutTranscript: 1, messageIds: [message.id] }
+  } });
 });

@@ -21,6 +21,7 @@ type CollectionPage = {
  * server never relates messages to an opportunity by phone number.
  */
 export function registerChatTools(server: McpServer, deps: ReadDeps): void {
+  registerChatHistory(server, deps);
   server.registerTool(
     "leads2b_list_chats",
     {
@@ -135,11 +136,7 @@ export function registerChatTools(server: McpServer, deps: ReadDeps): void {
     },
     async ({ chatId, entity = "OPPORTUNITY", entityId, limit = 25, offset = 0, order = "desc", maxPages = 20 }) => {
       try {
-        const chatResponse = await deps.v2.getChat({ id: chatId });
-        const scope = inspectChatScopeFromResponse(chatResponse, { entity, entityId }, chatId);
-        if (scope.verified !== "confirmed") {
-          throw new Error("O detalhe do chat não confirmou simultaneamente o ID do chat, id_entity e entity; mensagens não foram consultadas.");
-        }
+        const { response: chatResponse, scope } = await readConfirmedChat(deps, { entity, entityId }, chatId);
         const collected = await collectMessagePages(deps, {
           chatId,
           limit,
@@ -147,14 +144,20 @@ export function registerChatTools(server: McpServer, deps: ReadDeps): void {
           order,
           maxPages
         });
+        const audioWithoutTranscript = collected.messages.filter(message => isAudio(message)
+          && !(typeof message.transcription_text === "string" && message.transcription_text.trim()));
         return okResult({
           ok: true,
-          data: { ...collected, chat: chatResponse, scope },
+          data: { ...collected, chat: chatResponse, scope, mediaCoverage: {
+            audioWithoutTranscript: audioWithoutTranscript.length,
+            messageIds: audioWithoutTranscript.flatMap(message => technicalRowId(message) ?? [])
+          } },
           warnings: [
             "A rota de mensagens é interna e experimental; cada envelope recebido foi preservado em pages.",
             "Mensagens repetidas pelo mesmo identificador técnico são contadas em duplicatesRemoved; a primeira ocorrência é preservada.",
             "Nenhum vínculo por telefone é inferido. Uma cobertura partial não comprova ausência de mensagens.",
             "A paginação por offset não fornece snapshot atômico; novas mensagens podem deslocar páginas durante a coleta. complete significa fim observado, sem garantia de coleção imutável.",
+            ...(audioWithoutTranscript.length > 0 ? ["Há áudio identificado sem texto de transcrição no recorte consultado."] : []),
             ...collected.warnings
           ],
           summary: `Chat ${chatId}: ${collected.messages.length} mensagem(ns) única(s); cobertura ${collected.coverage.status}.`,
@@ -165,6 +168,73 @@ export function registerChatTools(server: McpServer, deps: ReadDeps): void {
       }
     }
   );
+}
+
+async function readConfirmedChat(deps: ReadDeps, requested: ChatScopeRequest, chatId: string | number) {
+  const response = await deps.v2.getChat({ id: chatId });
+  const scope = inspectChatScopeFromResponse(response, requested, chatId);
+  if (scope.verified !== "confirmed") {
+    throw new Error("O detalhe do chat não confirmou simultaneamente o ID do chat, id_entity e entity.");
+  }
+  return { response, scope };
+}
+
+export const CHAT_HISTORY_TOOL = "leads2b_list_chat_history";
+
+function registerChatHistory(server: McpServer, deps: ReadDeps) {
+  server.registerTool(CHAT_HISTORY_TOOL, {
+    description: "Consulta uma página de referências a conversas anteriores. Confirma o chat atual e cada referência na mesma oportunidade antes de retornar dados. Rota interna experimental.",
+    inputSchema: {
+      chatId: EntityIdSchema, entity: ChatEntitySchema.optional(), entityId: EntityIdSchema,
+      limit: z.number().int().min(1).max(20).optional(), offset: z.number().int().nonnegative().optional()
+    },
+    annotations: { readOnlyHint: true }
+  }, async ({ chatId, entity = "OPPORTUNITY", entityId, limit = 10, offset = 0 }) => {
+    try {
+      const requested = { entity, entityId } satisfies ChatScopeRequest;
+      const { scope } = await readConfirmedChat(deps, requested, chatId);
+      const response = await deps.v2.rawRequest({
+        method: "GET", path: `/messages/chats/${chatId}/history`, query: { limit, offset }
+      });
+      if (!isRecord(response) || !Array.isArray(response.chats)) {
+        throw new Error("O histórico de conversas não retornou a lista esperada.");
+      }
+      const seen = new Set([String(chatId)]);
+      const chats: Array<Record<string, unknown>> = [];
+      let unverified = 0;
+      let duplicateOrCurrent = 0;
+      for (const row of response.chats.slice(0, limit)) {
+        const id = EntityIdSchema.safeParse(isRecord(row) ? row.id : undefined);
+        if (!id.success || !isRecord(row)) { unverified++; continue; }
+        if (seen.has(String(id.data))) { duplicateOrCurrent++; continue; }
+        seen.add(String(id.data));
+        try {
+          validateChatRows([row], requested);
+          await readConfirmedChat(deps, requested, id.data);
+          chats.push(row);
+        } catch { unverified++; }
+      }
+      const uninspected = Math.max(0, response.chats.length - limit);
+      return okResult({
+        ok: true,
+        data: { chats, scope, coverage: {
+          status: unverified || uninspected || duplicateOrCurrent ? "partial" : "unknown",
+          requested: { limit, offset }, referencesReceived: response.chats.length,
+          unverified, uninspected, duplicateOrCurrent
+        } },
+        warnings: ["O histórico pode sugerir referências fora da oportunidade. Apenas referências com vínculo confirmado são retornadas. A API não comprova a cobertura total por oportunidade."],
+        summary: `${chats.length} referência(s) de histórico confirmada(s) na oportunidade.`,
+        source: { api: "v2", endpoint: "/messages/chats/{id}/history", stability: "experimental" }
+      });
+    } catch (error) { return errorResult(error); }
+  });
+}
+
+function isAudio(message: Record<string, unknown>): boolean {
+  const payload = isRecord(message.payload) ? message.payload : undefined;
+  const types = [message.type, message.message_type, message.file_type, message.mime_type, payload?.kind, payload?.type];
+  if (types.some(type => typeof type === "string" && /^(?:audio(?:\/|$)|voice$|ptt$)/i.test(type))) return true;
+  return typeof message.file_name === "string" && /\.(ogg|oga|opus|mp3|wav|m4a|aac|flac|amr)$/i.test(message.file_name);
 }
 
 async function collectMessagePages(
@@ -386,12 +456,9 @@ function inspectChatScope(rows: Array<Record<string, unknown>>, requested: ChatS
 }
 
 function inspectChatScopeFromResponse(response: unknown, requested: ChatScopeRequest, chatId: string | number) {
-  const records = response && typeof response === "object" ? [response as Record<string, unknown>] : [];
-  const nested = records.flatMap(record => {
-    const data = record.data;
-    return data && typeof data === "object" && !Array.isArray(data) ? [data as Record<string, unknown>] : [];
-  });
-  const all = [...records, ...nested];
+  const root = isRecord(response) ? response : undefined;
+  const data = isRecord(root?.data) ? root.data : undefined;
+  const all = [root, data, root?.chat, data?.chat].filter(isRecord);
   const chatKeys = ["id", "chat_id", "id_chat", "chatId"];
   const idKeys = ["id_entity", "entity_id", "idEntity", "opportunity_id"];
   const entityKeys = ["entity", "entity_type", "entityType"];

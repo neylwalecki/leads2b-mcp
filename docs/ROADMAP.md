@@ -14,17 +14,18 @@ O servidor concentra-se em consultas, atribuição e operações de CRM com sche
 - Campos personalizados preservados nos detalhes quando retornados pela API.
 - Distribuição por MCPB e instalação manual em clientes STDIO.
 
+[Matriz por prioridade, ferramenta e evidência](COVERAGE-MATRIX.md).
+
 ## Áreas para contribuição
 
 | Área | Limite atual |
 |---|---|
 | Paginação remota de customers | A saída usa recorte local; a semântica remota precisa de validação |
 | Contatos | Há detalhe e listagem por customer; não há busca global dedicada |
-| Histórico e resumo comercial | Há leitura de histórico com filtros, atividades por entidade, chats por oportunidade e mensagens paginadas. Paginação nativa e cobertura total continuam não verificadas. A escolha entre nota e atividade é explícita; não há conclusão de atividade, convite, envio de WhatsApp, mudança de etapa ou ganho/perda no fluxo |
-| Mídia e transcrição | Metadados, payloads e transcrições já retornados pelas mensagens são preservados no P0. Download de arquivo e transcrição nova não fazem parte desta fatia; validação de histórico entre sessões fica no backlog P1 |
-| Conversas e canais | Envio, reação, atribuição, exclusão, upload e agendamento de chat não fazem parte da cobertura. Diagnóstico de canais e fila de conversas é P1 |
-| Jornadas e agentes | Leitura contextual de jornadas, agentes e insights é P2, condicionada a caso de uso e vínculo verificável |
-| Relatórios e módulos nativos | Painéis, relatórios, formulários, landing pages, prospecção, e-mail, arquivos e orçamentos ficam em P3 até existir decisão operacional concreta |
+| Histórico e resumo comercial | Piloto de gravação em conta de teste. Cobertura total do histórico V1 e unicidade global ainda precisam de verificação |
+| Mídia e transcrição | A leitura preserva os metadados existentes e sinaliza áudio identificado sem texto. Download e transcrição nova exigem escopo próprio |
+| Atividades e conversas | Reagendamento, conclusão e remoção de atividade, envio, reação, atribuição, exclusão e agendamento de chat aguardam evidência por transição |
+| Caixas, relatórios e prospecção | Confirmar paginação e filtros dos POSTs de consulta em recortes maiores, filtros de relatórios dinâmicos e permissões e consumo de leituras de prospecção |
 | Encerramento de leads | Ganho/perda estão implementados somente para oportunidades |
 | Operações em lote e merges | Não há ferramentas dedicadas |
 | Transporte remoto | O servidor oferece somente STDIO |
