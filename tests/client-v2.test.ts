@@ -184,4 +184,31 @@ describe("Leads2bV2Client", () => {
       }
     ]);
   });
+
+  it("calls the observed chat list, detail and messages endpoints", async () => {
+    const calls: Array<{ path: string; query?: Record<string, unknown> }> = [];
+    const http = {
+      get: async (path: string, options?: { query?: Record<string, unknown> }) => {
+        calls.push({ path, query: options?.query });
+        return { data: [] };
+      }
+    } as unknown as Leads2bHttpClient;
+    const client = new Leads2bV2Client(http);
+
+    await client.listChats({ idEntity: 123, entity: "opportunity", order: "desc", limit: 5, offset: 10 });
+    await client.getChat({ id: 456 });
+    await client.listChatMessages({ id: 456, offset: 5, limit: 5, order: "desc" });
+
+    expect(calls).toEqual([
+      {
+        path: "/messages/chats",
+        query: { id_entity: 123, entity: "opportunity", order: "desc", situation: undefined, limit: 5, offset: 10 }
+      },
+      { path: "/messages/chats/456", query: undefined },
+      {
+        path: "/messages/chats/456/messages",
+        query: { offset: 5, limit: 5, order: "desc" }
+      }
+    ]);
+  });
 });

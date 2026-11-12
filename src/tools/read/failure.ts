@@ -9,6 +9,9 @@ type ReadRequest = {
   id: string | number;
   limit?: number;
   offset?: number;
+  type?: "comment" | "action" | "tracking";
+  unfinished?: boolean;
+  pinned?: boolean;
 };
 
 // Preserve the upstream failure. Diagnosis must not retry with a different token,

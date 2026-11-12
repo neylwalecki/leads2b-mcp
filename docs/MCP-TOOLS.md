@@ -119,13 +119,43 @@ O health testa somente `GET v1 /user/logged/` e `GET v2 /users` (mais `/latest` 
 
 ## Histórico
 
-`leads2b_list_history` solicita `GET /history/index/` com `entity` (`LEAD` ou `OPPORTUNITY`), `id` inteiro positivo ou string numérica positiva, `limit` (1..100, padrão 25) e `offset` (inteiro não negativo, padrão 0). A ferramenta fica disponível em todos os modos de escrita e não exige habilitar a API avançada. Não cria anotação, atividade, convite ou mensagem.
+`leads2b_list_history` solicita `GET /history/index/` com `entity` (`LEAD` ou `OPPORTUNITY`), `id` inteiro positivo ou string numérica positiva, `limit` (1..100, padrão 25) e `offset` (inteiro não negativo, padrão 0). Os filtros opcionais `type` (`comment`, `action` ou `tracking`), `unfinished` e `pinned` são encaminhados sem normalização. A ferramenta fica disponível em todos os modos de escrita e não exige habilitar a API avançada. Não cria anotação, atividade, convite ou mensagem.
 
 O retorno é `{response, coverage}`. `response` preserva integralmente o envelope da API; `coverage.requested` informa o `limit` e o `offset` solicitados. `coverage.status="unknown"` e `reason="native_pagination_unverified"` indicam que o servidor não confirmou se a API respeita esses parâmetros nem se a página esgota o histórico. Não há `nextOffset` calculado nem interpretação de formatos desconhecidos como lista vazia. Para consultar outra página, informe o offset desejado e compare as entradas recebidas antes de concluir que a paginação avançou.
 
 Os valores brutos de `entity` também são preservados: eventos de e-mail podem usar `opportunity` em vez de `OPPORTUNITY`. Confira o alias e `id_entity` no consumidor; o MCP não normaliza nem descarta esses eventos.
 
 A leitura usa um endpoint interno observado, sujeito a mudanças. Não há bloqueio prévio por contexto de usuário; erros de acesso ou do servidor são preservados. Uma chave de empresa pode ler alguns históricos e falhar em outros; o detalhe de oportunidade também pode depender do contexto. Sucesso parcial não valida acesso aos demais registros. As ferramentas de criação de anotação/atividade continuam sujeitas ao modo de escrita e aos seus pré-requisitos.
+
+`leads2b_list_activities` solicita `GET /history/activities/` para uma entidade e um ID. A resposta integral fica em `data.response`, com `coverage.status="unknown"` enquanto a paginação e a cobertura do endpoint não forem verificadas. Use essa leitura para conferir ações planejadas e para a releitura de uma atividade, sem tratar uma lista vazia como prova de ausência.
+
+`leads2b_list_pipeline_responsible_users` consulta os responsáveis ativos do funil por `GET /pipeline/responsible_users/{pipelineId}/active`. O catálogo serve apenas para validar elegibilidade no funil escolhido; a ferramenta não altera responsáveis nem cria atividade.
+
+## Conversas comerciais
+
+As ferramentas de chat usam a API v2 e rotas internas observadas. Chat e mensagem permanecem restritos ao ID informado e ao vínculo confirmado; não há agrupamento por número de telefone. As rotas são experimentais e não incluem envio, reação, atribuição, exclusão, upload ou agendamento.
+
+### `leads2b_list_chats`
+
+Entrada: `id` obrigatório; `entity` opcional (`OPPORTUNITY`, padrão `OPPORTUNITY`); `order` opcional (`asc` ou `desc`, padrão `desc`); `situation` opcional; `limit` opcional (1..100, padrão 25); `offset` opcional (inteiro não negativo, padrão 0).
+
+Solicita `GET /messages/chats` com `id_entity`, `entity=opportunity`, `order`, `situation`, `limit` e `offset`. A ferramenta valida os campos de entidade e ID quando aparecem nas linhas, rejeita vínculo incompleto, remove duplicidades técnicas da página e retorna `data.response` integral, `data.chats`, `data.scope` e `data.coverage`. A cobertura desta consulta é `unknown`, com `reason="native_pagination_unverified"`, pois a ferramenta lê uma página por chamada. `recordsFetched` conta as linhas recebidas e `recordsReturned` as linhas depois da deduplicação. `scope.verified` só fica `confirmed` quando todas as linhas retornadas trazem o par entidade e ID.
+
+### `leads2b_get_chat`
+
+Entrada: `chatId` e `entityId` obrigatórios; `entity` opcional (`OPPORTUNITY`, padrão `OPPORTUNITY`).
+
+Solicita `GET /messages/chats/{chatId}` e retorna `data.response`, `data.chat` e `data.scope`. Campos de chat, entidade e ID presentes no retorno são comparados com os valores solicitados; um conflito ou vínculo incompleto produz erro. Se o envelope não trouxer os campos de entidade, `scope.verified` permanece `unknown`, mas o ID do chat continua sendo conferido quando retornado.
+
+### `leads2b_list_chat_messages`
+
+Entrada: `chatId` e `entityId` obrigatórios; `entity` opcional (`OPPORTUNITY`, padrão `OPPORTUNITY`); `limit` opcional (1..100, padrão 25); `offset` opcional (inteiro não negativo, padrão 0); `order` opcional (`asc` ou `desc`, padrão `desc`); `maxPages` opcional (1..20, padrão 20).
+
+Antes de ler mensagens, a ferramenta solicita `GET /messages/chats/{chatId}` e valida o vínculo com `entity` e `entityId`. Só depois solicita `GET /messages/chats/{chatId}/messages` em páginas consecutivas. A ferramenta preserva cada envelope em `data.pages`; quando há uma só página, `data.response` é o envelope original, e quando há mais de uma, `data.response` contém `{pages}`. `data.messages` mantém uma ocorrência por identificador técnico, sem perder os envelopes brutos. Campos de ID, timestamp, direção, texto, mídia, payload e transcrição são preservados quando retornados.
+
+`coverage.status="complete"` somente quando a coleta começa em offset zero, mantém identificadores e ordem verificáveis e uma página vazia encerra a coleta (`reason="empty_page"`). `status="partial"` acompanha `reason="empty_page_after_offset"`, `"page_limit"`, `"repeated_page"`, `"duplicate_rows"`, `"missing_identifier"`, `"order_unverified"`, `"unstable_order"`, `"invalid_response"` ou `"request_failed"`; nesses casos, `nextOffset` indica onde uma leitura posterior pode começar. `rawRecordsFetched`, `recordsReturned`, `duplicatesRemoved`, `missingIdentifiers` e `order` descrevem a coleta. A deduplicação, a validação de escopo, a verificação de ordem e a interrupção por repetição são feitas pela ferramenta; o cliente deve respeitar a cobertura e não interpretar um recorte `partial` como ausência de mensagens.
+
+Esta coleta por offset não usa snapshot atômico. `complete` descreve o fim observado nessa coleta, sem garantir uma coleção imutável enquanto novas mensagens chegam. `nextOffset` permite retomar uma leitura parcial, mas unir recortes de momentos diferentes não comprova cobertura completa.
 
 ## Operação comercial de leads
 
@@ -273,7 +303,7 @@ As quatro ferramentas abaixo respeitam `disabled` (não registradas), `preview` 
 
 Datas devem ser válidas em `YYYY-MM-DD HH:mm:ss`, no horário da conta, com término igual ou posterior ao início. Não são convertidas silenciosamente. Restrições de agenda, campos obrigatórios, tipo de atividade, pipeline e permissões continuam sujeitas à API. Registrar atividade não equivale a enviar convite ou mensagem nem a declarar uma atividade concluída; estes contratos adicionais não foram implementados.
 
-Após a chamada, `outcome=request_accepted` significa somente resposta aceita; `outcome=rejected` representa rejeição de negócio. `readback.status=fetched` acompanha dados observados, sem afirmar ganho/perda confirmado. Releitura de histórico consulta até 25 entradas da entidade; não comprova unicidade nem cobertura integral. Se houver erro da mutação, o retorno permanece erro e inclui `writeState.outcome=unknown`, `automaticRetry=false` e a releitura. Se a releitura falhar após resposta aceita, a aceitação permanece registrada com `readback.status=failed`. Confira o estado antes de repetir.
+Antes de uma nota ou atividade em `live`, o MCP consulta o histórico filtrado para o mesmo alvo. Envelope ilegível ou possível duplicidade por texto e campos bloqueia a operação com `outcome=not_sent`; não há POST nesse caso. Após uma chamada enviada, `outcome=request_accepted` significa somente resposta aceita; `outcome=rejected` representa rejeição de negócio. `readback` consulta até 100 entradas, e atividades também consultam `/history/activities/`. `verification.status="observed"` só aparece quando o ID retornado coincide com uma ocorrência única no recorte e os campos pertinentes, alvo e texto integral conferem; em atividades, o estado pendente também deve ser observado. `verification.uniqueness="unverified"` permanece sempre, pois a paginação global da API v1 não foi validada. Formatos não reconhecidos ficam `unconfirmed` e exigem conciliação. Se houver erro da mutação, o retorno permanece erro e inclui `writeState.outcome="unknown"`, `automaticRetry=false`, alvo, corpo solicitado e releitura. Se a releitura falhar após resposta aceita, a aceitação permanece registrada com a verificação correspondente. Confira o estado antes de repetir.
 
 ### Valores de campos personalizados
 

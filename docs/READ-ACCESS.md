@@ -22,7 +22,11 @@ Para operar somente leitura, mantenha `LEADS2B_WRITE_MODE=disabled` e `LEADS2B_E
 
 ## Paginação e limites da evidência
 
-Cada sucesso de `leads2b_list_history` mantém `{response, coverage}` com cobertura `unknown`. O servidor não ordena, deduplica, descarta eventos ou calcula `nextOffset`. Mesmo uma resposta vazia, repetida, fora de ordem ou maior que o limite solicitado permanece bruta e não comprova completude.
+Cada sucesso de `leads2b_list_history` mantém `{response, coverage}` com cobertura `unknown`. Os filtros `type`, `unfinished` e `pinned` são encaminhados à API, mas não comprovam que o backend os aplicou. O servidor não ordena, deduplica, descarta eventos ou calcula `nextOffset`. Mesmo uma resposta vazia, repetida, fora de ordem ou maior que o limite solicitado permanece bruta e não comprova completude.
+
+`leads2b_list_activities` mantém a resposta integral de `GET /history/activities/` e informa cobertura `unknown` enquanto a paginação nativa não for validada. Use entidade e ID exatos para conferir uma atividade, sem aceitar uma fila global como prova de vínculo.
+
+As leituras de conversa v2 precisam de duas conferências: o detalhe do chat deve confirmar o vínculo com a entidade e o ID consultados, e as páginas de mensagens devem ser comparadas por ID e timestamp. `leads2b_list_chat_messages` valida o detalhe antes de ler, remove duplicidades técnicas, verifica a ordem e interrompe uma página repetida. O consumidor deve respeitar `coverage.status`, `reason` e `nextOffset`. Uma coleta `complete` exige offset inicial zero, ordem verificável e página vazia; `partial` também cobre sobreposição, offset inicial diferente de zero, identificadores ausentes e ordem não confirmada, e não comprova ausência. Preserve mensagens com mídia ou transcrição quando esses campos vierem no envelope. Não reúna chats por telefone.
 
 Eventos de e-mail podem trazer `entity="opportunity"`, enquanto outros eventos usam `OPPORTUNITY`. O MCP preserva esses valores. Consumidores que reconheçam os dois aliases devem validar também `id_entity`; não use o alias para aceitar eventos de outra entidade ou de outro registro.
 
@@ -37,4 +41,4 @@ Para validar uma coleta específica, confira entidade/ID de cada evento, IDs ún
 
 ## Contrato das APIs internas
 
-Histórico e detalhe usam endpoints internos observados, sujeitos a mudanças: `GET /history/index/` recebe `entity`, `id_entity`, `limit` e `offset`; o detalhe usa `GET /opportunity/index/{id}`. A [referência de endpoints](API-ENDPOINTS.md) distingue essas rotas da API pública. Não acrescente filtros nem transfira parâmetros entre as duas APIs sem confirmar o contrato.
+Histórico e detalhe usam endpoints internos observados, sujeitos a mudanças: `GET /history/index/` recebe `entity`, `id_entity`, `limit`, `offset` e filtros opcionais; atividades usam `GET /history/activities/`; conversas usam `GET /messages/chats` e seus subrecursos v2; o detalhe de oportunidade usa `GET /opportunity/index/{id}`. A [referência de endpoints](API-ENDPOINTS.md) distingue essas rotas da API pública. Não acrescente filtros nem transfira parâmetros entre as duas APIs sem confirmar o contrato.

@@ -31,6 +31,7 @@ const V1_TOOLS = [
   "leads2b_get_customer_v1", "leads2b_get_contact", "leads2b_list_contacts", "leads2b_get_opportunity",
   "leads2b_get_logged_user",
   "leads2b_list_history",
+  "leads2b_list_activities", "leads2b_list_pipeline_responsible_users",
   "leads2b_list_origins",
   "leads2b_list_pipelines",
   "leads2b_get_dashboard_counts",
@@ -54,6 +55,7 @@ const V1_TOOLS = [
 ];
 
 const V2_TOOLS = [
+  "leads2b_list_chats", "leads2b_get_chat", "leads2b_list_chat_messages",
   "leads2b_list_users",
   "leads2b_list_webhooks",
   "leads2b_list_cnaes",

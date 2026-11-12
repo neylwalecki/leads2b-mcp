@@ -11,7 +11,7 @@ Projeto independente, sem afiliação à Leads2b. Licença [MIT](LICENSE).
 | Empresas e pessoas | Listagem, busca, detalhe e CRUD de `CUSTOMER` |
 | Contatos | Listagem por customer, detalhe e CRUD |
 | Leads e oportunidades | Busca, detalhe, CRUD e alteração de funil, etapa e responsável |
-| Oportunidades e histórico | Leitura de páginas do histórico; ganho, perda com motivo, anotações e atividades com contratos experimentais |
+| Conversas e histórico | Chats por oportunidade, mensagens paginadas, histórico filtrável, atividades e gravações experimentais de nota/atividade |
 | Operação de leads | Coleta paginada, filtros, candidatos e cobertura explícita |
 | Atribuição | Conversões, tracking, UTMs, first/last touch observados e divergências |
 | Catálogos | Equipe, pipelines, etapas, origens, campos, tags e motivos de perda |
@@ -119,6 +119,17 @@ O pacote é gerado em `artifacts/leads2b-mcp-VERSAO.mcpb`. O empacotador recusa 
 
 Testes padrão usam mocks e fixtures sanitizadas. Integração somente leitura é opt-in com `RUN_LEADS2B_INTEGRATION_TESTS=true`. A CI está configurada para Linux e Windows com Node 22 e 24; os resultados das execuções estão em [Actions](https://github.com/neylwalecki/leads2b-mcp/actions).
 
+Para demonstrar o fluxo de resumo comercial sem tokens, rede ou alterações, compile e execute:
+
+```sh
+npm run build
+node examples/commercial-summary-preview.mjs
+```
+
+O exemplo usa `InMemoryTransport`, respostas sintéticas em `example.com`, quatro páginas de mensagens e as duas operações de escrita em `preview`. Ele falha se qualquer chamada simulada sair do escopo previsto.
+
+Se o cliente MCP ativo usar o mesmo diretório `dist/`, siga os comandos de build isolado no [guia do fluxo](docs/COMMERCIAL-SUMMARY.md) antes de executar a demonstração.
+
 ### Interface para automações
 
 Importe `leads2b-mcp/lead-ops` após instalar o pacote local. Essa entrada exporta `scanLeadOps`, configuração, clientes e normalizadores com tipos. Caminhos legados `dist/*` continuam disponíveis. Veja o [exemplo executável](examples/lead-ops.mjs).
@@ -129,6 +140,8 @@ Importe `leads2b-mcp/lead-ops` após instalar o pacote local. Essa entrada expor
 
 - O servidor usa as APIs internas `app.leads2b.com/api/v1` e `/api/v2`. Elas diferem da API pública `api.leads2b.com/v2` e podem mudar sem aviso.
 - Ganho/perda de oportunidade, anotação e atividade são experimentais. Permissões e persistência dependem da API e das regras da conta. Registrar atividade não envia convite nem marca conclusão.
+- As rotas internas de conversas são experimentais. O fluxo conserva o vínculo entre oportunidade e chat, não reúne chats por telefone e não envia mensagens, mídia, reações ou convites.
+- O fluxo de resumo comercial prepara uma prévia e oferece escolha explícita entre nota e atividade. Um piloto de gravação real exige autorização separada para conta, oportunidade, usuário, tipo e data, além de releitura no GET e conferência na UI.
 - A paginação da busca de customers é local: limita a saída, mas não reduz a transferência da resposta original.
 - Merges, importações em lote, ganho/perda de lead e conversões artificiais não têm ferramentas dedicadas. Consulte a [cobertura](docs/ROADMAP.md).
 - Consultas brutas preservam os dados da conta autenticada. Restrinja o acesso ao cliente MCP e compartilhe somente exemplos sanitizados.
@@ -144,6 +157,7 @@ Importe `leads2b-mcp/lead-ops` após instalar o pacote local. Essa entrada expor
 - [Atribuição e origem](docs/ATRIBUICAO-E-ORIGEM.md)
 - [Dependências e empacotamento](docs/DEPENDENCY-AUDIT.md)
 - [Cobertura e evolução](docs/ROADMAP.md)
+- [Fluxo de resumo comercial](docs/COMMERCIAL-SUMMARY.md)
 - [Changelog](CHANGELOG.md)
 
 ## Contribuição

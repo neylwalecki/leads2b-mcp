@@ -4,6 +4,8 @@ import { Leads2bHttpClient, Leads2bHttpMethod, Leads2bRequestOptions } from "./h
 
 export type Leads2bSegmentationEntity = "CUSTOMER" | "LEAD" | "OPPORTUNITY";
 export type Leads2bDealEntity = "LEAD" | "OPPORTUNITY";
+export type Leads2bChatEntity = "opportunity";
+export type Leads2bChatOrder = "asc" | "desc";
 export type Leads2bRawRequestInput = {
   method: Leads2bHttpMethod;
   path: string;
@@ -128,6 +130,52 @@ export class Leads2bV2Client {
       query: {
         id: input.id,
         entity: input.entity
+      }
+    });
+  }
+
+  /**
+   * Internal V2 endpoint observed by the Leads2b application. Keep this
+   * wrapper narrow: chat records are scoped by the entity ID supplied by the
+   * caller and are never joined locally by phone number.
+   */
+  listChats(input: {
+    idEntity: string | number;
+    entity?: Leads2bChatEntity;
+    order?: Leads2bChatOrder;
+    situation?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<unknown> {
+    return this.http.get("/messages/chats", {
+      query: {
+        id_entity: input.idEntity,
+        entity: input.entity ?? "opportunity",
+        order: input.order ?? "desc",
+        situation: input.situation,
+        limit: input.limit,
+        offset: input.offset
+      }
+    });
+  }
+
+  /** Internal V2 endpoint observed in the authenticated application. */
+  getChat(input: { id: string | number }): Promise<unknown> {
+    return this.http.get(`/messages/chats/${input.id}`);
+  }
+
+  /** Internal V2 endpoint observed in the authenticated application. */
+  listChatMessages(input: {
+    id: string | number;
+    offset?: number;
+    limit?: number;
+    order?: Leads2bChatOrder;
+  }): Promise<unknown> {
+    return this.http.get(`/messages/chats/${input.id}/messages`, {
+      query: {
+        offset: input.offset,
+        limit: input.limit,
+        order: input.order ?? "desc"
       }
     });
   }

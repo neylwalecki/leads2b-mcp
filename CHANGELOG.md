@@ -8,6 +8,11 @@ Mudanças ainda não distribuídas ficam em `Unreleased`. Versões publicadas es
 
 - Falhas de histórico e detalhe de oportunidade incluem `readState` com requisição, cobertura desconhecida e contexto de usuário não verificado. Erros HTTP 400/500 orientam diagnóstico sem trocar tokens ou repetir consultas automaticamente.
 - `leads2b_list_history`: consulta somente leitura de histórico de lead ou oportunidade, com `limit`/`offset` enviados à API v1 e preservação do envelope integral. A paginação nativa e a cobertura total permanecem não verificadas.
+- `leads2b_list_history` aceita filtros observados de `type`, `unfinished` e `pinned`, sem normalizar ou descartar o envelope retornado.
+- Leitura experimental de conversas v2 por oportunidade e por chat, com mensagens paginadas, vínculo explícito, validação do detalhe antes das mensagens, verificação de ordem e preservação de texto, direção, timestamps e metadados de mídia/transcrição.
+- `leads2b_list_activities` e o catálogo de responsáveis ativos do funil apoiam a conferência de atividades planejadas antes de uma gravação.
+- Notas e atividades preservam o texto integral, conferem possíveis duplicidades antes de enviar e acrescentam `verification` por ID, alvo e campos após a gravação. Falhas de pré-leitura ou possíveis duplicatas impedem o POST. Os modos de escrita e a ausência de retry em mutações continuam preservados.
+- Guia e demonstração offline do resumo comercial com escolha entre nota e atividade e piloto separado para uma gravação sintética autorizada.
 - Cobertura estruturada por fonte em `leads2b_find_records`, incluindo falhas, fontes desconhecidas e busca global de contatos indisponível.
 
 ### Corrigido

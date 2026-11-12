@@ -1,0 +1,8 @@
+{
+  "id": "501",
+  "id_entity": "123",
+  "entity": "opportunity",
+  "channel": "whatsapp",
+  "updated_at": "2026-06-01T12:00:00.000Z",
+  "participants": [{ "id": "700", "display_name": "Example Contact" }]
+}

@@ -4,7 +4,9 @@ import { registerDealActionTools, DEAL_ACTION_TOOL_NAMES } from "../src/tools/de
 
 function setup(writeMode: "disabled" | "preview" | "live", user = true) {
   const handlers = new Map<string, (input: any) => Promise<any>>();
-  const rawRequest = vi.fn().mockImplementation(async (input) => input.method === "GET" ? { opportunity_data: [{ id: 123, won_at: "2026-10-05" }] } : { success: true });
+  const rawRequest = vi.fn().mockImplementation(async (input) => input.path === "/history/index/" ? []
+    : input.path === "/history/activities/" ? { data: { activities: [] } }
+      : input.method === "GET" ? { opportunity_data: [{ id: 123, won_at: "2026-10-05" }] } : { success: true });
   const createHistory = vi.fn().mockResolvedValue({ message: { id: 91 } });
   const getLoggedUser = vi.fn().mockResolvedValue({ data: { user: user ? { id: 7 } : [] } });
   registerDealActionTools({ registerTool: (name: string, _config: any, call: any) => handlers.set(name, call) } as unknown as McpServer, { writeMode, v1: { rawRequest, createHistory, getLoggedUser } } as never);
@@ -38,7 +40,7 @@ it("creates a note using the logged user and reads its entity history", async ()
   const s = setup("live");
   await s.handlers.get("leads2b_create_note")!({ entity: "OPPORTUNITY", id: 123, message: "Example" });
   expect(s.createHistory).toHaveBeenCalledExactlyOnceWith({ entity: "OPPORTUNITY", id_entity: 123, option: "comment", message: "Example", receiver: 7 });
-  expect(s.rawRequest).toHaveBeenCalledWith({ method: "GET", path: "/history/index/", query: { entity: "OPPORTUNITY", id_entity: 123, limit: 25, offset: 0 } });
+  expect(s.rawRequest).toHaveBeenCalledWith({ method: "GET", path: "/history/index/", query: { entity: "OPPORTUNITY", id_entity: "123", type: "comment", limit: 100, offset: 0 } });
 });
 it("creates an activity with explicit receiver, action and naive API timestamp", async () => {
   const s = setup("live");

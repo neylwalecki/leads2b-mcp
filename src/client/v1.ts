@@ -10,6 +10,15 @@ export type Leads2bRawRequestInput = {
 export type Leads2bPipelineEntity = "LEAD" | "OPPORTUNITY";
 export type Leads2bLossEntity = "OPPORTUNITY";
 export type Leads2bColumnEntity = "LEAD" | "CONTACT" | "OPPORTUNITY";
+export type Leads2bHistoryInput = {
+  entity: Leads2bPipelineEntity;
+  id: string | number;
+  limit?: number;
+  offset?: number;
+  type?: "comment" | "action" | "tracking";
+  unfinished?: boolean;
+  pinned?: boolean;
+};
 
 export class Leads2bV1Client {
   constructor(private readonly http: Leads2bHttpClient) {}
@@ -60,6 +69,21 @@ export class Leads2bV1Client {
 
   listTeamUsers(): Promise<unknown> {
     return this.http.get("/user/all");
+  }
+
+  listPipelineResponsibleUsers(input: { pipelineId: string | number }): Promise<unknown> {
+    return this.http.get(`/pipeline/responsible_users/${input.pipelineId}/active`);
+  }
+
+  listHistory(input: Leads2bHistoryInput): Promise<unknown> {
+    return this.http.get("/history/index/", { query: {
+      entity: input.entity, id_entity: input.id, limit: input.limit ?? 25, offset: input.offset ?? 0,
+      type: input.type, unfinished: input.unfinished, pinned: input.pinned
+    } });
+  }
+
+  listActivities(input: { entity: Leads2bPipelineEntity; id: string | number }): Promise<unknown> {
+    return this.http.get("/history/activities/", { query: { entity: input.entity, id_entity: input.id } });
   }
 
   listPipelineStages(input: { pipelineId: string | number }): Promise<unknown> {

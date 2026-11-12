@@ -1,0 +1,24 @@
+{
+  "data": {
+    "chats": [
+      {
+        "id": "501",
+        "id_entity": "123",
+        "entity": "opportunity",
+        "channel": "whatsapp",
+        "updated_at": "2026-06-01T12:00:00.000Z",
+        "participant": { "display_name": "Example Contact" }
+      },
+      {
+        "id": "500",
+        "id_entity": "123",
+        "entity": "opportunity",
+        "channel": "whatsapp",
+        "updated_at": "2026-05-31T12:00:00.000Z",
+        "participant": { "display_name": "Example Contact" }
+      }
+    ],
+    "total": 2
+  },
+  "meta": { "source": "sanitized" }
+}

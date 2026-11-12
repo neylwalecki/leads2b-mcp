@@ -1,0 +1,35 @@
+[
+  {
+    "data": [
+      { "id": "m-14", "chat_id": "501", "created_at": "2026-06-01T12:00:00.000Z", "direction": "outbound", "text": "Example message 14", "payload": { "kind": "text" }, "file_url": null, "file_name": null, "transcription": null, "transcription_text": null },
+      { "id": "m-13", "chat_id": "501", "created_at": "2026-06-01T11:59:00.000Z", "direction": "inbound", "text": "Example message 13", "payload": { "kind": "text" }, "file_url": null, "file_name": null, "transcription": null, "transcription_text": null },
+      { "id": "m-12", "chat_id": "501", "created_at": "2026-06-01T11:58:00.000Z", "direction": "inbound", "text": null, "payload": { "kind": "audio" }, "file_url": "https://example.com/media/example.ogg", "file_name": "example.ogg", "transcription": { "language": "pt-BR" }, "transcription_text": "Example transcription" },
+      { "id": "m-11", "chat_id": "501", "created_at": "2026-06-01T11:57:00.000Z", "direction": "outbound", "text": "Example message 11", "payload": { "kind": "text", "custom": { "flag": false } }, "file_url": null, "file_name": null, "transcription": null, "transcription_text": null },
+      { "id": "m-10", "chat_id": "501", "created_at": "2026-06-01T11:56:00.000Z", "direction": "inbound", "text": "Example message 10", "payload": { "kind": "text" }, "file_url": null, "file_name": null, "transcription": null, "transcription_text": null }
+    ],
+    "total": 14,
+    "meta": { "page": 0 }
+  },
+  {
+    "data": [
+      { "id": "m-9", "chat_id": "501", "created_at": "2026-06-01T11:55:00.000Z", "direction": "outbound", "text": "Example message 9", "payload": { "kind": "text" }, "file_url": null, "file_name": null, "transcription": null, "transcription_text": null },
+      { "id": "m-8", "chat_id": "501", "created_at": "2026-06-01T11:54:00.000Z", "direction": "inbound", "text": "Example message 8", "payload": { "kind": "text" }, "file_url": null, "file_name": null, "transcription": null, "transcription_text": null },
+      { "id": "m-7", "chat_id": "501", "created_at": "2026-06-01T11:53:00.000Z", "direction": "inbound", "text": "Example message 7", "payload": { "kind": "text" }, "file_url": null, "file_name": null, "transcription": null, "transcription_text": null },
+      { "id": "m-6", "chat_id": "501", "created_at": "2026-06-01T11:52:00.000Z", "direction": "outbound", "text": "Example message 6", "payload": { "kind": "text" }, "file_url": null, "file_name": null, "transcription": null, "transcription_text": null },
+      { "id": "m-5", "chat_id": "501", "created_at": "2026-06-01T11:51:00.000Z", "direction": "inbound", "text": "Example message 5", "payload": { "kind": "text" }, "file_url": null, "file_name": null, "transcription": null, "transcription_text": null }
+    ],
+    "total": 14,
+    "meta": { "page": 1 }
+  },
+  {
+    "data": [
+      { "id": "m-4", "chat_id": "501", "created_at": "2026-06-01T11:50:00.000Z", "direction": "outbound", "text": "Example message 4", "payload": { "kind": "text" }, "file_url": null, "file_name": null, "transcription": null, "transcription_text": null },
+      { "id": "m-3", "chat_id": "501", "created_at": "2026-06-01T11:49:00.000Z", "direction": "inbound", "text": "Example message 3", "payload": { "kind": "text" }, "file_url": null, "file_name": null, "transcription": null, "transcription_text": null },
+      { "id": "m-2", "chat_id": "501", "created_at": "2026-06-01T11:48:00.000Z", "direction": "inbound", "text": "Example message 2", "payload": { "kind": "text" }, "file_url": null, "file_name": null, "transcription": null, "transcription_text": null },
+      { "id": "m-1", "chat_id": "501", "created_at": "2026-06-01T11:47:00.000Z", "direction": "outbound", "text": "Example message 1", "payload": { "kind": "text" }, "file_url": null, "file_name": null, "transcription": null, "transcription_text": null }
+    ],
+    "total": 14,
+    "meta": { "page": 2 }
+  },
+  { "data": [], "total": 14, "meta": { "page": 3 } }
+]

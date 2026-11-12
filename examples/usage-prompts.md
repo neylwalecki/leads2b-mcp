@@ -37,6 +37,40 @@ solicite offset=25 e compare os IDs das entradas. Pare se a resposta repetir
 a página anterior. Não presuma cobertura completa nem crie anotação ou atividade.
 ```
 
+## Preparar resumo comercial
+
+```text
+Para a oportunidade 123, liste os chats com entity="OPPORTUNITY" e id=123.
+Para cada chat, use leads2b_get_chat com chatId e entityId=123, confirme o
+detalhe e descarte qualquer chat cujo vínculo não corresponda ao ID 123. Leia
+as mensagens com chatId e entityId=123, em páginas com order="desc". A
+ferramenta deduplica identificadores técnicos, detecta páginas repetidas e
+informa coverage. Preserve direção, timestamps, texto e metadados de mídia ou
+transcrição. Não reúna chats por telefone.
+
+Depois, consulte leads2b_list_history para entity="OPPORTUNITY", id=123 e
+type="comment". Faça uma consulta separada com unfinished=true para pendências.
+Consulte também leads2b_list_activities para o mesmo ID. Prepare uma prévia
+com fontes, datas, lacunas e próximos passos.
+Não crie registro nesta etapa.
+```
+
+## Escolher nota ou atividade
+
+```text
+Mostre a prévia do resumo e pergunte se devo registrar uma nota ou planejar uma
+atividade. Para nota, use leads2b_create_note e preserve o texto integral. Para
+atividade, consulte os responsáveis ativos do funil e os tipos de ação, depois
+use leads2b_create_activity com receiver, action e data explícitos.
+
+Não envie action_type_label, assunto, convite, evento de calendário ou WhatsApp.
+Em live, execute uma única chamada, releia o histórico ou as atividades e
+compare ID, entidade, oportunidade, texto e campos pertinentes. Se a resposta
+ou a releitura for ambígua, pare e concilie antes de repetir.
+```
+
+Uma gravação real só deve ocorrer em conta de teste e oportunidade descartável autorizadas para esse piloto. A ferramenta não altera etapa nem marca ganho ou perda.
+
 ## Investigar falha de leitura comercial
 
 ```text
