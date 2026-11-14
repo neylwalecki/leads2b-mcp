@@ -4,6 +4,7 @@ import { loadConfig } from "../src/config.js";
 import { registerHealthTool } from "../src/tools/health.js";
 import { Leads2bHttpError } from "../src/client/http.js";
 import { DEAL_ACTION_TOOL_NAMES } from "../src/tools/deal-actions.js";
+import { CHAT_ACTION_TOOL_NAMES, registerChatActionTools } from "../src/tools/chat-actions.js";
 import { WRITE_TOOL_NAMES } from "../src/tools/write.js";
 
 async function health(mode: "disabled" | "preview" | "live", user = false, denied = false, configured = true) {
@@ -25,8 +26,8 @@ describe("health evidence scope", () => {
   });
   it("previews every registered write even without tokens or a user", async () => {
     const data = await health("preview", false, false, false);
-    expect(data.writeTools.availableTools).toEqual([...WRITE_TOOL_NAMES, ...DEAL_ACTION_TOOL_NAMES]);
-    expect(data.writeTools.previewTools).toEqual([...WRITE_TOOL_NAMES, ...DEAL_ACTION_TOOL_NAMES]);
+    expect(data.writeTools.availableTools).toEqual([...WRITE_TOOL_NAMES, ...DEAL_ACTION_TOOL_NAMES, ...CHAT_ACTION_TOOL_NAMES]);
+    expect(data.writeTools.previewTools).toEqual([...WRITE_TOOL_NAMES, ...DEAL_ACTION_TOOL_NAMES, ...CHAT_ACTION_TOOL_NAMES]);
     expect(data.writeTools.livePrerequisitesMetTools).toEqual([]);
   });
   it("does not call live prerequisites verified write permissions", async () => {
@@ -50,6 +51,7 @@ it("reports exactly the catalog actually registered for each mode", async () => 
     registerReadTools(server, deps); registerAttributionTools(server, deps);
     registerWriteTools(server, { v1: {} as never, writeMode: mode });
     registerDealActionTools(server, { v1: {} as never, writeMode: mode });
+    registerChatActionTools(server, { v2: {} as never, writeMode: mode });
     expect((await health(mode)).registeredTools.slice().sort()).toEqual(["leads2b_health_check", ...names].sort());
   }
 });

@@ -10,20 +10,27 @@ import { errorResult, okResult } from "./result.js";
 
 const RESCHEDULE = "leads2b_reschedule_activity";
 const COMPLETE = "leads2b_complete_activity";
-export const ACTIVITY_TRANSITION_TOOL_NAMES = [RESCHEDULE, COMPLETE] as const;
+const ATTEMPT = "leads2b_record_activity_attempt";
+const REMOVE = "leads2b_delete_activity";
+const CLOSE_WITHOUT_GOAL = "leads2b_close_activity_without_goal";
+export const ACTIVITY_TRANSITION_TOOL_NAMES = [RESCHEDULE, COMPLETE, ATTEMPT, REMOVE, CLOSE_WITHOUT_GOAL] as const;
 
 const targetSchema = z.strictObject({
   entity: historyEntity,
   id: EntityIdSchema.describe("ID do lead ou da oportunidade."),
-  activity_id: EntityIdSchema.describe("ID do item de atividade no histórico."),
-  close_description: nonBlankText
+  activity_id: EntityIdSchema.describe("ID do item de atividade no histórico.")
 });
-const rescheduleSchema = targetSchema.extend({ action_date: timestamp });
-const completeSchema = targetSchema.extend({ close_date: timestamp });
+const transitionSchema = targetSchema.extend({ close_description: nonBlankText });
+const rescheduleSchema = transitionSchema.extend({ action_date: timestamp });
+const completeSchema = transitionSchema.extend({ close_date: timestamp });
+const removeSchema = targetSchema.extend({ reason: nonBlankText.optional(), confirm_destructive: z.boolean().optional() });
 type Target = z.infer<typeof targetSchema>;
 type Transition =
   | { status: "reschedule"; action_date: string; close_description: string }
-  | { status: "done"; done: true; close_date: string; close_description: string };
+  | { status: "tried"; action_date: string; close_description: string }
+  | { status: "done"; done: true; close_date: string; close_description: string }
+  | { status: "unfinishedGoal"; done: false; close_date: string; close_description: string };
+type Change = Transition | { reason: string | undefined };
 type Row = Record<string, unknown>;
 type Deps = { v1: Pick<Leads2bV1Client, "rawRequest" | "getLoggedUser">; writeMode: Leads2bWriteMode };
 
@@ -34,6 +41,7 @@ const hasExternalLink = (row: Row) => row.external_id != null && row.external_id
 const activityDate = (row: Row) => row.action_date_sql ?? row.action_date;
 const sameId = (value: unknown, id: string | number) => EntityIdSchema.safeParse(value).success && String(value) === String(id);
 const isDone = (row: Row) => row.done === true || row.done === 1 || row.done === "1";
+const isNotDone = (row: Row) => row.done === false || row.done === 0 || row.done === "0";
 
 function activityRows(state: HistoryState, target: Target) {
   const history = state.history.status === "fetched" ? historyRows(state.history.result, "history") : undefined;
@@ -66,22 +74,32 @@ function duration(row: Row): number | null | undefined {
   return Date.parse(String(end).replace(" ", "T") + "Z") - Date.parse(String(start).replace(" ", "T") + "Z");
 }
 
-function verifyTransition(state: HistoryState, target: Target, change: Transition, before: Row) {
+function verifyTransition(state: HistoryState, target: Target, change: Change, before: Row, userId: string | number) {
   const rows = activityRows(state, target);
+  if ("reason" in change) {
+    return {
+      status: rows.history?.length === 0 && rows.planned?.length === 0 ? "absent_in_readback" : "unconfirmed",
+      history: { occurrences: rows.history?.length ?? null }, planned: { occurrences: rows.planned?.length ?? null },
+      coverage: state.coverage, automaticRetry: false
+    };
+  }
   const row = rows.history?.length === 1 ? rows.history[0] : undefined;
+  const closes = "close_date" in change;
   const fields = matchesTarget(row, target) ? {
     preserved: preservedFields.every(field => isSameField(field, before, row)),
     reason: row.close_description === change.close_description,
     status: row.status === change.status,
-    dates: change.status === "reschedule"
-      ? activityDate(row) === change.action_date && duration(row) === duration(before)
-      : row.close_date === change.close_date && activityDate(row) === activityDate(before) && row.final_date === before.final_date,
-    state: change.status === "reschedule" ? row.close_date === null && !isDone(row) : isDone(row)
+    dates: closes
+      ? row.close_date === change.close_date && activityDate(row) === activityDate(before) && row.final_date === before.final_date
+      : activityDate(row) === change.action_date && (change.status === "tried" || duration(row) === duration(before)),
+    state: change.status === "unfinishedGoal" ? isNotDone(row)
+      : change.status === "done" ? isDone(row) : row.close_date === null && !isDone(row),
+    actor: change.status !== "tried" || sameId(row.tried_by_user_id, userId)
   } : undefined;
   const planned = rows.planned;
-  const plannedMatches = planned !== undefined && (change.status === "reschedule"
-    ? planned.length === 1 && planned[0].close_date === null && activityDate(planned[0]) === change.action_date
-    : planned.length === 0 || (planned.length === 1 && planned[0].close_date === change.close_date));
+  const plannedMatches = planned !== undefined && (closes
+    ? planned.length === 0 || (planned.length === 1 && planned[0].close_date === change.close_date)
+    : planned.length === 1 && planned[0].close_date === null && activityDate(planned[0]) === change.action_date);
   return {
     status: fields && Object.values(fields).every(Boolean) && plannedMatches ? "observed" : "unconfirmed",
     history: { occurrences: rows.history?.length ?? null, fields: fields ?? null },
@@ -107,14 +125,34 @@ export function registerActivityTransitionTools(server: McpServer, deps: Deps): 
   }, ({ close_date, ...target }) => run(COMPLETE, target, {
     status: "done", done: true, close_date, close_description: target.close_description
   }));
+  server.registerTool(ATTEMPT, {
+    description: `Registra uma tentativa de contato com motivo e data do próximo acompanhamento. ${context}`,
+    inputSchema: rescheduleSchema, annotations
+  }, ({ action_date, ...target }) => run(ATTEMPT, target, {
+    status: "tried", action_date, close_description: target.close_description
+  }));
+  server.registerTool(REMOVE, {
+    description: "Solicita a exclusão de uma atividade comum no negócio informado. Exige confirmação destrutiva e motivo se a atividade estiver encerrada. Rota interna experimental.",
+    inputSchema: removeSchema, annotations: { ...annotations, destructiveHint: true }
+  }, ({ reason, confirm_destructive, ...target }) => run(REMOVE, target, { reason }, confirm_destructive));
+  server.registerTool(CLOSE_WITHOUT_GOAL, {
+    description: `Encerra uma atividade com objetivo não atingido, data e motivo. ${context}`,
+    inputSchema: completeSchema, annotations
+  }, ({ close_date, ...target }) => run(CLOSE_WITHOUT_GOAL, target, {
+    status: "unfinishedGoal", done: false, close_date, close_description: target.close_description
+  }));
 
-  async function run(operation: string, target: Target, body: Transition) {
+  async function run(operation: string, target: Target, change: Change, confirmDestructive?: boolean) {
     const activityId = String(target.activity_id);
     const endpoint = `/history/index/${activityId}`;
     const source = { api: "v1", endpoint, stability: "experimental" } as const;
     const scope = { entity: target.entity, id: target.id, activity_id: target.activity_id };
-    const plan = { operation, api: "v1", method: "PUT", endpoint, mode: deps.writeMode, target: scope, body, executed: false };
-    const gate = evaluateWriteOperation({ writeMode: deps.writeMode, destructive: false });
+    const method = "reason" in change ? "DELETE" : "PUT";
+    const isAttempt = "status" in change && change.status === "tried";
+    const plan = { operation, api: "v1", method, endpoint, mode: deps.writeMode, target: scope,
+      body: "reason" in change && change.reason === undefined ? null : change,
+      ...(isAttempt ? { derivedFields: ["tried_by_user_id"] } : {}), executed: false };
+    const gate = evaluateWriteOperation({ writeMode: deps.writeMode, destructive: method === "DELETE", confirmDestructive });
     if (!gate.shouldExecute) {
       return okResult({ ok: true, data: plan, summary: "Operação planejada.", warnings: gate.warnings, source });
     }
@@ -126,38 +164,55 @@ export function registerActivityTransitionTools(server: McpServer, deps: Deps): 
     if (inFlight.has(activityId)) return stop("Já existe uma transição em andamento para esta atividade.");
     inFlight.add(activityId);
     try {
-      await requireLoggedUser(deps.v1, endpoint);
+      const userId = await requireLoggedUser(deps.v1, endpoint);
       const before = await read();
       const rows = activityRows(before, target);
       const row = rows.history?.length === 1 ? rows.history[0] : undefined;
       const planned = rows.planned?.length === 1 ? rows.planned[0] : undefined;
-      if (!matchesTarget(row, target) || row.close_date !== null || isDone(row) || (row.status !== "pending" && row.status !== "reschedule")
-        || !planned || planned.close_date !== null || activityDate(planned) !== activityDate(row)
-        || duration(row) === undefined) {
-        return stop("A releitura precisa confirmar uma atividade comum aberta, com ID, vínculo e data consistentes no histórico e em Planejado.", before);
+      if (!matchesTarget(row, target)) return stop("A releitura não confirmou uma atividade comum com o ID e o vínculo informados.", before);
+      const open = row.close_date === null && !isDone(row)
+        && (row.status === "pending" || row.status === "reschedule" || row.status === "tried")
+        && planned?.close_date === null && activityDate(planned) === activityDate(row) && duration(row) !== undefined;
+      if ("reason" in change) {
+        const closed = timestamp.safeParse(row.close_date).success && (isDone(row) || row.status === "done" || row.status === "unfinishedGoal")
+          && (rows.planned?.length === 0 || planned?.close_date === row.close_date);
+        if (!(open || closed)) return stop("A releitura não confirmou o estado da atividade nos dois recortes.", before);
+        if (closed !== (change.reason !== undefined)) {
+          return stop("Informe o motivo apenas para uma atividade encerrada.", before);
+        }
+      } else if (!open) {
+        return stop("A releitura precisa confirmar uma atividade aberta com data consistente no histórico e em Planejado.", before);
       }
-      if (body.status === "reschedule" && activityDate(row) === body.action_date) {
+      if ("status" in change && change.status === "reschedule" && activityDate(row) === change.action_date) {
         return stop("A atividade já está na data e hora solicitadas.", before);
       }
+      if ("status" in change && change.status === "tried" && row.status === "tried"
+        && activityDate(row) === change.action_date && row.close_description === change.close_description) {
+        return stop("A tentativa com a mesma data e motivo já consta no histórico.", before);
+      }
 
+      const body = "reason" in change ? (change.reason === undefined ? undefined : { reason: change.reason })
+        : isAttempt ? { ...change, tried_by_user_id: userId } : change;
       let result: unknown;
       try {
-        result = await deps.v1.rawRequest({ method: "PUT", path: endpoint, body });
+        result = await deps.v1.rawRequest({ method, path: endpoint, body });
       } catch (error) {
         const failure = errorResult(error);
         const readback = await read();
         return { ...failure, structuredContent: { ...failure.structuredContent, target: scope, requested: body,
           writeState: { requestSent: true, outcome: "unknown", automaticRetry: false },
-          readback, verification: verifyTransition(readback, target, body, row) } };
+          readback, verification: verifyTransition(readback, target, change, row, userId) } };
       }
 
       const rejected = businessFailure(result);
       const readback = await read();
-      const verification = verifyTransition(readback, target, body, row);
+      const verification = verifyTransition(readback, target, change, row, userId);
       const outcome = rejected ? "rejected" : "request_accepted";
       const summary = rejected ? "A API rejeitou a transição." : verification.status === "observed"
-        ? "Transição confirmada no histórico e em Planejado." : "A resposta foi recebida. A releitura ainda não confirmou a transição.";
-      const response = okResult({ ok: true, data: { ...plan, executed: true, outcome, result, readback, verification }, summary, source });
+        ? "Transição confirmada no histórico e em Planejado." : verification.status === "absent_in_readback"
+          ? "A atividade deixou de aparecer nos recortes relidos do histórico e de Planejado."
+          : "A resposta foi recebida. A releitura ainda não confirmou a transição.";
+      const response = okResult({ ok: true, data: { ...plan, body: body ?? null, executed: true, outcome, result, readback, verification }, summary, source });
       return rejected ? { ...response, isError: true, structuredContent: { ...response.structuredContent, ok: false } } : response;
     } catch (error) {
       return errorResult(error);

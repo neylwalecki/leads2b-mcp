@@ -1,6 +1,6 @@
 # Endpoints
 
-Referência dos endpoints utilizados pelo MCP. As observações iniciais são de 08/09/2026. A [matriz de cobertura](COVERAGE-MATRIX.md) registra contratos operacionais e validações de 12/11/2026.
+Referência dos endpoints utilizados pelo MCP. As observações iniciais são de 08/09/2026. A [matriz de cobertura](COVERAGE-MATRIX.md) registra contratos operacionais e suas validações.
 
 Status indica a evidência técnica disponível, não uma garantia de acesso em toda conta. HTTP 200 e lista vazia não comprovam contexto de usuário nem cobertura completa.
 

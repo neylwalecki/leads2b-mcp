@@ -19,6 +19,8 @@ Mudanças ainda não distribuídas ficam em `Unreleased`. Versões publicadas es
 - Histórico entre chats confere o vínculo de cada referência. A leitura de mensagens indica áudio identificado sem texto de transcrição.
 
 - Criação de atividade aceita assunto separado da descrição. Novas ferramentas tipadas reagendam ou concluem atividades existentes, com confirmação de vínculo e releitura do histórico e de Planejado.
+- Consultas experimentais de jornada publicada, filtros de segmentação, participantes, responsáveis de chat, áudio por mensagem e relatório de ações por intervalo.
+- Ferramentas experimentais para registrar tentativa de contato, encerrar sem atingir o objetivo e excluir atividade. O catálogo de chat em modo de escrita inclui atribuição, texto, agendamento, reação no CRM e exclusão de conversa WhatsApp Web.
 
 ### Corrigido
 

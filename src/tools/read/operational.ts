@@ -3,6 +3,7 @@ import { z } from "zod";
 import { Leads2bHttpError } from "../../client/http.js";
 import type { Leads2bRawRequestInput } from "../../client/v1.js";
 import { EntityIdSchema } from "../../crud/schemas.js";
+import { timestamp } from "../deal-action-support.js";
 import { errorResult, okResult } from "../result.js";
 import type { ReadDeps } from "./shared.js";
 
@@ -123,6 +124,10 @@ const p1: ReadTool[] = [
   fixed("leads2b_get_chat_channel_activation_status", "v2", "/messages/channels/activations/status",
     "Consulta o estado de ativação dos canais, com retorno restrito a campos de status.", { select: activationStatus }),
   fixed("leads2b_get_chat_inbox_counts", "v2", "/messages/chats/count", "Consulta os contadores da caixa de conversas no escopo da credencial."),
+  read("leads2b_list_chat_users", "v2", "/messages/chats/users", "Consulta os usuários da caixa de conversas para a situação informada.",
+    { situation: z.enum(["open", "closed"]).default("open") }, ({ situation }) => ({
+      path: "/messages/chats/users", query: { situation, order: "desc" }
+    })),
   read("leads2b_list_inbox_chats", "v2", "/messages/chats", "Consulta um recorte da caixa de conversas abertas ou encerradas.",
     { situation: z.enum(["open", "closed"]).default("open"), limit: pageSize, offset }, ({ situation, limit, offset }) => ({
       path: "/messages/chats", query: { situation, order: "desc", limit, offset }
@@ -155,6 +160,10 @@ const p1: ReadTool[] = [
 const p2: ReadTool[] = [
   fixed("leads2b_list_workflows", "v2", "/workflow", "Consulta o catálogo de jornadas no recorte padrão da API.", { page: true }),
   fixed("leads2b_count_active_workflows", "v2", "/workflow/activeCount", "Consulta o contador de jornadas ativas."),
+  read("leads2b_get_published_journey", "v1", "/flow/index/{id}", "Consulta a configuração da jornada pelo ID de fluxo retornado pelo Leads2b.",
+    id, ({ id }) => ({ path: `/flow/index/${id}` })),
+  read("leads2b_get_segmentation", "v2", "/segmentations/{id}", "Consulta a definição e os filtros armazenados de uma segmentação pelo ID.",
+    id, ({ id }) => ({ path: `/segmentations/${id}` })),
   read("leads2b_list_deal_workflow_instances", "v1", "/deal/workflow_instances", "Consulta as instâncias de jornadas vinculadas ao negócio.",
     deal, ({ id, entity }) => ({ path: "/deal/workflow_instances", query: { id, type: entity.toLowerCase() } })),
   read("leads2b_get_opportunity_journey_cards", "v2", "/deals/journey-cards/OPPORTUNITY/{id}", "Consulta os cards da jornada de uma oportunidade, inclusive pós-venda quando retornado.",
@@ -194,6 +203,11 @@ const p3: ReadTool[] = [
   fixed("leads2b_list_report_tabs", "v1", "/report_tab/list", "Consulta as categorias disponíveis de relatório."),
   read("leads2b_list_reports", "v1", "/report/list/report", "Consulta o catálogo de relatórios para o ID de categoria retornado por leads2b_list_report_tabs.",
     { tabId: EntityIdSchema }, ({ tabId }) => ({ path: "/report/list/report", query: { tab: tabId } })),
+  read("leads2b_run_activity_report", "v1", "/report/index/54", "Executa o relatório de ações por intervalo no horário da conta. A API define o recorte dos valores devolvidos.",
+    { interval: z.strictObject({ start: timestamp, end: timestamp })
+      .refine(({ start, end }) => start <= end, "O início deve preceder ou coincidir com o fim.") }, ({ interval }) => ({
+      path: "/report/index/54", body: { interval, datetimeFormat: "%Y-%m-%d %H:%i:%s" }
+    }), { method: "POST" }),
   read("leads2b_list_opportunity_files", "v1", "/opportunity/uploaded_files/{id}", "Consulta o inventário de anexos da oportunidade.",
     id, ({ id }) => ({ path: `/opportunity/uploaded_files/${id}` })),
   read("leads2b_list_opportunity_quotations", "v1", "/opportunity/quotation/{id}/QUOTATION", "Consulta os orçamentos da oportunidade. Permite solicitar itens com loadItems.",

@@ -51,6 +51,7 @@ describe("P1 operational reads", () => {
     { name: "list_history_users", path: "/v1/history/history_users/" },
     { name: "list_stage_activities", args: { id: 123, entity: "OPPORTUNITY", stageId: 45 }, path: "/v1/history/history_pipeline_item/?entity=OPPORTUNITY&id_entity=123&id_pipeline_item=45" },
     { name: "get_chat_inbox_counts", path: "/v2/messages/chats/count" },
+    { name: "list_chat_users", args: { situation: "closed" }, path: "/v2/messages/chats/users?situation=closed&order=desc" },
     { name: "list_inbox_chats", args: { situation: "closed", limit: 5 }, path: "/v2/messages/chats?situation=closed&order=desc&limit=5&offset=0", page: true },
     { name: "list_scheduled_activities", args: { page: 2, pageSize: 5, todo: true, responsible: [7, "8"], date: { start: "2026-01-02", end: "2026-01-03" } },
       path: "/v1/schedule/index/?pagination%5Bpage%5D=2&pagination%5BperPage%5D=5&todo=true&responsible%5B0%5D=7&responsible%5B1%5D=8&date%5BstartDate%5D=2026-01-02+00%3A00%3A00&date%5BendDate%5D=2026-01-03+23%3A59%3A59", page: true },
@@ -100,6 +101,8 @@ describe("P1 operational reads", () => {
 describe("P2 journeys and agents", () => {
   it.each<Case>([
     { name: "list_workflows", path: "/v2/workflow", page: true },
+    { name: "get_published_journey", args: { id: 14 }, path: "/v1/flow/index/14" },
+    { name: "get_segmentation", args: { id: 15 }, path: "/v2/segmentations/15" },
     { name: "count_active_workflows", path: "/v2/workflow/activeCount" },
     { name: "list_deal_workflow_instances", args: { id: 123, entity: "OPPORTUNITY" }, path: "/v1/deal/workflow_instances?id=123&type=opportunity" },
     { name: "get_opportunity_journey_cards", args: { id: 123 }, path: "/v2/deals/journey-cards/OPPORTUNITY/123" },
@@ -154,5 +157,20 @@ describe("P3 catalogs and query-only POSTs", () => {
     expect(result.structuredContent).toMatchObject({ data: { detailsReturned: true } });
     expect(JSON.stringify(result)).not.toContain("synthetic-voice-credential");
     expect(fetchMock).toHaveBeenCalledExactlyOnceWith("https://example.com/api/v1/voice/details", expect.objectContaining({ method: "GET" }));
+  });
+
+  it("runs the fixed activity report with a bounded filter schema and never retries POST", async () => {
+    const interval = { start: "2026-01-02 00:00:00", end: "2026-01-02 23:59:59" };
+    expect((await call("run_activity_report", { interval: { start: interval.end, end: interval.start } })).isError).toBe(true);
+    expect((await call("run_activity_report", { interval, reportId: 99 })).isError).toBe(true);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect((await client.listTools()).tools.find(tool => tool.name === "leads2b_run_activity_report")?.annotations?.readOnlyHint).toBe(true);
+    fetchMock.mockResolvedValueOnce(Response.json({ error: "Unavailable" }, { status: 503 }));
+    expect((await call("run_activity_report", { interval })).structuredContent).toMatchObject({ error: { status: 503 } });
+    expect(fetchMock).toHaveBeenCalledExactlyOnceWith("https://example.com/api/v1/report/index/54", expect.objectContaining({
+      method: "POST", body: JSON.stringify({ interval, datetimeFormat: "%Y-%m-%d %H:%i:%s" })
+    }));
+    fetchMock.mockResolvedValueOnce(Response.json({ report: { id: "54", values: [["example"]] } }));
+    expect((await call("run_activity_report", { interval })).structuredContent).toMatchObject({ data: { report: { values: [["example"]] } } });
   });
 });

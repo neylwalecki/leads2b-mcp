@@ -33,6 +33,38 @@ async function connect(withToken = true) {
 }
 
 describe("experimental V2 chat reads", () => {
+  it("requires confirmed opportunity scope and preserves a participants permission error", async () => {
+    const requests: string[] = [];
+    globalThis.fetch = async url => {
+      requests.push(String(url));
+      return String(url).endsWith("/participants") ? Response.json({ message: "Forbidden" }, { status: 403 })
+        : Response.json({ chat: chatDetail });
+    };
+    await connect();
+    const call = (entityId: number) => client.callTool({ name: "leads2b_list_chat_participants", arguments: { chatId: 501, entityId } });
+    expect((await call(124)).isError).toBe(true);
+    expect(requests).toHaveLength(1);
+    expect((await call(123)).structuredContent).toMatchObject({ ok: false, error: { status: 403 } });
+    expect(requests[2]).toBe("https://example.com/api/v2/messages/chats/501/participants");
+  });
+
+  it("locates audio by message ID within the confirmed chat and reports missing transcript or a partial window", async () => {
+    const requests: string[] = [];
+    globalThis.fetch = async url => {
+      const path = new URL(String(url));
+      requests.push(path.hostname);
+      return path.pathname.endsWith("/messages") ? Response.json({ messages: [
+        { id: 137, id_chat: 501, timestamp: "2026-01-05T00:00:00Z", type: "audio", file_url: "https://example.net/voice.ogg" }
+      ] }) : Response.json({ chat: chatDetail });
+    };
+    await connect();
+    const call = (messageId: number) => client.callTool({ name: "leads2b_get_chat_audio", arguments: { chatId: 501, entityId: 123, messageId, maxPages: 1 } });
+    expect((await call(137)).structuredContent).toMatchObject({ data: {
+      status: "audio_without_transcript", message: { file_url: "https://example.net/voice.ogg" }
+    } });
+    expect((await call(138)).structuredContent).toMatchObject({ data: { status: "not_found_in_window", message: null, coverage: { status: "partial" } } });
+    expect(requests).toEqual(Array(4).fill("example.com"));
+  });
   it("lists chats only in the requested opportunity scope and preserves the envelope", async () => {
     const requests: string[] = [];
     globalThis.fetch = async url => {

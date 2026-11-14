@@ -10,6 +10,7 @@ import { registerHealthTool } from "./tools/health.js";
 import { registerRawApiTool } from "./tools/raw-api.js";
 import { registerReadTools } from "./tools/read.js";
 import { registerDealActionTools } from "./tools/deal-actions.js";
+import { registerChatActionTools } from "./tools/chat-actions.js";
 import { registerWriteTools } from "./tools/write.js";
 
 const config = loadConfig();
@@ -41,6 +42,7 @@ registerAttributionTools(server, { v1, v2 });
 if (config.writeMode !== "disabled") {
   registerWriteTools(server, { v1, writeMode: config.writeMode });
   registerDealActionTools(server, { v1, writeMode: config.writeMode });
+  registerChatActionTools(server, { v2, writeMode: config.writeMode });
 }
 
 if (config.rawApiEnabled) {

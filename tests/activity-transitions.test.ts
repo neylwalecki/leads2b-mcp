@@ -51,10 +51,10 @@ function mockApi(options: {
     const url = new URL(input);
     expect(url.origin).toBe("https://example.com");
     if (url.pathname === "/api/v1/user/logged/") return Response.json({ data: { user: options.user === false ? [] : { id: 7 } } });
-    if (init?.method === "PUT") {
+    if (init?.method === "PUT" || init?.method === "DELETE") {
       expect(url.pathname).toBe("/api/v1/history/index/9102");
-      expect(new Headers(init.headers).get("content-type")).toBe("application/json");
-      writes.push(JSON.parse(String(init.body)));
+      if (init.body) expect(new Headers(init.headers).get("content-type")).toBe("application/json");
+      writes.push(init.body ? JSON.parse(String(init.body)) : null);
       await options.onWrite?.();
       return Response.json(options.result ?? { message: "example-response" }, { status: options.writeStatus ?? 200 });
     }
@@ -76,6 +76,42 @@ function mockApi(options: {
 const reschedule = (arguments_: Record<string, unknown> = { ...target, action_date }) =>
   client.callTool({ name: "leads2b_reschedule_activity", arguments: arguments_ });
 const complete = () => client.callTool({ name: "leads2b_complete_activity", arguments: { ...target, close_date } });
+
+it("records the follow-up date in a failed contact attempt using the authenticated user", async () => {
+  const after = { ...rescheduled, status: "tried", tried_by_user_id: "7" };
+  const { entity, id, activity_id, close_description } = target;
+  const { writes } = mockApi({ after: [after], afterPlanned: [planned(after)] });
+  await setup();
+  const call = () => client.callTool({ name: "leads2b_record_activity_attempt", arguments: { entity, id, activity_id, close_description, action_date } });
+  expect((await call()).structuredContent).toMatchObject({ data: { verification: { status: "observed" } } });
+  expect((await call()).structuredContent).toMatchObject({ data: { outcome: "not_sent" } });
+  expect(writes).toEqual([{ status: "tried", action_date, close_description, tried_by_user_id: 7 }]);
+});
+
+it("closes without reaching the objective and requires the explicitly false completion flag on readback", async () => {
+  const after = { ...original, status: "unfinishedGoal", done: "0", close_date, close_description: target.close_description };
+  const { writes } = mockApi({ after: [after], afterPlanned: [] });
+  await setup();
+  const result = await client.callTool({ name: "leads2b_close_activity_without_goal", arguments: { ...target, close_date } });
+  expect(result.structuredContent).toMatchObject({ data: { verification: { status: "observed" } } });
+  expect(writes).toEqual([{ status: "unfinishedGoal", done: false, close_date, close_description: target.close_description }]);
+});
+
+it.each([false, true])("requires confirmation before deleting and sends a reason only for closed activities (%s)", async isClosed => {
+  const before = isClosed ? closed : original;
+  const { fetch, writes } = mockApi({ before: [before], beforePlanned: isClosed ? [] : [planned(before)], after: [], afterPlanned: [] });
+  await setup();
+  const { entity, id, activity_id } = target;
+  const call = (extra: Record<string, unknown>) => client.callTool({ name: "leads2b_delete_activity", arguments: { entity, id, activity_id, ...extra } });
+  expect((await call({})).structuredContent).toMatchObject({ data: { executed: false } });
+  expect(fetch).not.toHaveBeenCalled();
+  expect((await call({ confirm_destructive: true, ...(isClosed ? {} : { reason: "Exemplo" }) })).isError).toBe(true);
+  expect(writes).toHaveLength(0);
+  expect((await call({ confirm_destructive: true, ...(isClosed ? { reason: "Exemplo" } : {}) })).structuredContent).toMatchObject({ data: {
+    method: "DELETE", verification: { status: "absent_in_readback", coverage: { status: "unknown" } }
+  } });
+  expect(writes).toEqual([isClosed ? { reason: "Exemplo" } : null]);
+});
 
 it("reports exact previews, including target and body, without HTTP", async () => {
   const { fetch } = mockApi();

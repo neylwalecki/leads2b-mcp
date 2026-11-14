@@ -133,7 +133,7 @@ A leitura usa um endpoint interno observado, sujeito a mudanças. Não há bloqu
 
 ## Conversas comerciais
 
-As ferramentas de chat usam a API v2 e rotas internas observadas. Chat e mensagem permanecem restritos ao ID informado e ao vínculo confirmado; não há agrupamento por número de telefone. As rotas são experimentais e não incluem envio, reação, atribuição, exclusão, upload ou agendamento.
+As ferramentas de chat usam rotas internas experimentais da API v2. O vínculo entre chat e oportunidade usa os IDs confirmados no detalhe do chat. O telefone só é usado para conferir o destinatário explícito nas operações de mensagem.
 
 ### `leads2b_list_chats`
 
@@ -157,9 +157,23 @@ Antes de ler mensagens, a ferramenta solicita `GET /messages/chats/{chatId}` e v
 
 Esta coleta por offset não usa snapshot atômico. `complete` descreve o fim observado nessa coleta, sem garantir uma coleção imutável enquanto novas mensagens chegam. `nextOffset` permite retomar uma leitura parcial, mas unir recortes de momentos diferentes não comprova cobertura completa.
 
+`leads2b_list_chat_participants` consulta o chat confirmado com `chatId` e `entityId`. A API pode retornar HTTP 403 conforme a permissão da credencial. `leads2b_list_chat_users` consulta o catálogo de responsáveis da caixa com `situation` (`open` ou `closed`). `leads2b_get_chat_audio` aceita os mesmos parâmetros de `leads2b_list_chat_messages` e `messageId`. Retorna o registro de áudio, a cobertura da busca e um dos estados `transcribed`, `audio_without_transcript`, `not_audio` ou `not_found_in_window`. Os dados vêm da API de mensagens. A geração de transcrição permanece pendente.
+
+### Alterações experimentais de chat
+
+As cinco ferramentas exigem `chatId`, `entityId` da oportunidade e `channelId`. `preview` devolve um plano sem consultar a API. `live` verifica IDs e estado antes de enviar uma única requisição. A resposta distingue a aceitação da API da verificação posterior. Uma releitura de mensagem usa o ID retornado pela API e confirma registro no CRM. Entrega ao destinatário tem evidência própria. Quando a mutação falha com resultado ambíguo, confira o estado antes de tentar novamente.
+
+| Ferramenta | Entradas adicionais | Escopo |
+|---|---|---|
+| `leads2b_assign_chat` | `assigneeId`, `priorAssigneeId` (`null` para conversa sem responsável) | Atualiza a atribuição do chat aberto e verifica o responsável no detalhe. A interface cria uma mensagem de sistema em uma chamada separada. |
+| `leads2b_send_chat_text` | `recipient`, `text` | Texto para o destinatário conferido no chat aberto do WhatsApp oficial com sessão ativa. |
+| `leads2b_schedule_chat_text` | `recipient`, `text`, `scheduledAt` (ISO com fuso) | Mesmo escopo de texto para horário futuro dentro das próximas 24 horas. A disponibilidade no horário de envio depende da API e do canal. |
+| `leads2b_react_to_chat_message` | `messageId`, `reaction`, `offset` opcional | Apenas mensagem confirmada na página do chat e no canal informado. A releitura busca a reação no CRM. |
+| `leads2b_delete_chat` | `confirm_destructive=true` | Exclusão no canal WhatsApp Web. A releitura distingue marca de exclusão, 404 e estado inconclusivo. |
+
 ## Consultas operacionais P1 a P3
 
-A [matriz de cobertura](COVERAGE-MATRIX.md) lista cada ferramenta por função, endpoint, método, teste e limite. Consultas paginadas experimentais devolvem `{response, coverage}`. A cobertura fica desconhecida quando a paginação nativa ainda não está comprovada. As ferramentas dedicadas da Caixa de Leads e de busca de listas de prospecção usam POST com payload tipado e anotação de leitura. Chamadas pela ferramenta bruta seguem o modo de escrita.
+A [matriz de cobertura](COVERAGE-MATRIX.md) lista cada ferramenta por função, endpoint, método, teste e limite. Consultas paginadas experimentais devolvem `{response, coverage}`. A cobertura fica desconhecida quando a paginação nativa ainda não está comprovada. Caixa de Leads, busca de listas de prospecção e `leads2b_run_activity_report` usam POST de consulta tipado. O relatório aceita `interval.start` e `interval.end` em `YYYY-MM-DD HH:mm:ss`, no horário da conta, para o Relatório de ações. `leads2b_get_published_journey` e `leads2b_get_segmentation` consultam definições pelo `id`. Chamadas pela ferramenta bruta seguem o modo de escrita.
 
 ## Operação comercial de leads
 
@@ -257,7 +271,7 @@ Observações:
 
 ## Escrita
 
-`disabled` não registra ferramentas; `preview` retorna plano; `live` envia a operação. Exclusão requer `confirm_destructive=true`. Todas as ferramentas abaixo usam a API interna v1 e schemas explícitos, sem aceitar campos desconhecidos fora de `parameters` e `custom_fields`.
+`disabled` não registra ferramentas de escrita. `preview` retorna um plano e `live` permite enviar a operação. Exclusão requer `confirm_destructive=true`. As ferramentas de CRUD na tabela usam a API interna v1 e schemas explícitos, com campos livres em `parameters` e `custom_fields`.
 
 | Entidade | Criar | Editar | Excluir |
 |---|---|---|---|
@@ -306,12 +320,15 @@ As ferramentas abaixo respeitam `disabled` (não registradas), `preview` (sem ch
 | `leads2b_create_activity` | `entity: LEAD\|OPPORTUNITY`, `id`, `message`, `receiver`, `action`, `data`, `final_date?`, `action_type_label?`, `id_pipeline_item?` | Registra atividade com assunto opcional separado de `message`. Consulte `leads2b_list_actions` e equipe para os IDs. |
 | `leads2b_reschedule_activity` | `entity`, `id`, `activity_id`, `action_date`, `close_description` | Reagenda para a data e hora informadas. A releitura confere o ID, a duração e a permanência em Planejado. |
 | `leads2b_complete_activity` | `entity`, `id`, `activity_id`, `close_date`, `close_description` | Registra conclusão com data e motivo. A releitura confere o estado concluído e a ausência de pendência aberta para o ID. |
+| `leads2b_record_activity_attempt` | `entity`, `id`, `activity_id`, `action_date`, `close_description` | Registra tentativa de contato, motivo e data do próximo acompanhamento. O usuário da tentativa vem da credencial V1. |
+| `leads2b_close_activity_without_goal` | `entity`, `id`, `activity_id`, `close_date`, `close_description` | Encerra com `unfinishedGoal` e `done=false`. |
+| `leads2b_delete_activity` | `entity`, `id`, `activity_id`, `reason` para atividade encerrada, `confirm_destructive=true` | Solicita a exclusão de uma atividade comum do CRM sem vínculo externo. `absent_in_readback` indica ausência nos recortes relidos. |
 
 Datas devem ser válidas em `YYYY-MM-DD HH:mm:ss`, no horário da conta, com término igual ou posterior ao início. Não são convertidas silenciosamente. Restrições de agenda, campos obrigatórios, tipo de atividade, pipeline e permissões continuam sujeitas à API. As ferramentas de atividade operam no histórico do CRM.
 
 Antes de uma nota ou atividade em `live`, o MCP consulta o histórico filtrado para o mesmo alvo. Envelope ilegível ou possível duplicidade por texto e campos bloqueia a operação com `outcome=not_sent`; não há POST nesse caso. Após uma chamada enviada, `outcome=request_accepted` significa somente resposta aceita; `outcome=rejected` representa rejeição de negócio. `readback` consulta até 100 entradas, e atividades também consultam `/history/activities/`. `verification.status="observed"` só aparece quando o ID retornado coincide com uma ocorrência única no recorte e os campos pertinentes, alvo e texto integral conferem; em atividades, o estado pendente também deve ser observado. `verification.uniqueness="unverified"` permanece sempre, pois a paginação global da API v1 não foi validada. Formatos não reconhecidos ficam `unconfirmed` e exigem conciliação. Se houver erro da mutação, o retorno permanece erro e inclui `writeState.outcome="unknown"`, `automaticRetry=false`, alvo, corpo solicitado e releitura. Se a releitura falhar após resposta aceita, a aceitação permanece registrada com a verificação correspondente. Confira o estado antes de repetir.
 
-Para reagendar ou concluir, informe `entity` (`LEAD` ou `OPPORTUNITY`), o `id` do negócio e o `activity_id` do histórico. A pré-leitura precisa confirmar uma única atividade aberta, sem vínculo externo, com data consistente em Planejado. O reagendamento para o horário atual e a conclusão de atividade já fechada retornam `outcome=not_sent`. As ferramentas distinguem aceitação da API de `verification.status=observed` e incluem releitura quando a resposta do PUT é ambígua. O piloto cobriu FollowUp sem evento de calendário externo.
+Para operar sobre uma atividade existente, informe `entity` (`LEAD` ou `OPPORTUNITY`), o `id` do negócio e o `activity_id` do histórico. A pré-leitura precisa confirmar uma única atividade comum sem vínculo externo e consistência com Planejado. As transições exigem atividade aberta. A exclusão aceita também atividade encerrada com motivo. As ferramentas informam a aceitação da API e o resultado da releitura, inclusive quando a resposta da mutação é ambígua. O piloto cobriu reagendamento e conclusão de um FollowUp sem evento de calendário externo.
 
 ### Valores de campos personalizados
 

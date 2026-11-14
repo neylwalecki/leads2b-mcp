@@ -14,6 +14,13 @@ type CollectionPage = {
   rows: Array<Record<string, unknown>>;
   response: unknown;
 };
+const chatScopeSchema = { chatId: EntityIdSchema, entity: ChatEntitySchema.optional(), entityId: EntityIdSchema };
+const messagePageSchema = {
+  limit: z.number().int().min(1).max(100).optional(),
+  offset: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).optional(),
+  order: ChatOrderSchema.optional(),
+  maxPages: z.number().int().min(1).max(20).optional()
+};
 
 /**
  * The chat endpoints are internal V2 routes observed in the authenticated
@@ -22,6 +29,7 @@ type CollectionPage = {
  */
 export function registerChatTools(server: McpServer, deps: ReadDeps): void {
   registerChatHistory(server, deps);
+  registerChatParticipantsAndAudio(server, deps);
   server.registerTool(
     "leads2b_list_chats",
     {
@@ -90,11 +98,7 @@ export function registerChatTools(server: McpServer, deps: ReadDeps): void {
     {
       title: "Get chat",
       description: "Consulta o detalhe integral de um chat pela API V2 e confirma o ID da oportunidade solicitada. A rota é interna e experimental.",
-      inputSchema: {
-        chatId: EntityIdSchema,
-        entity: ChatEntitySchema.optional(),
-        entityId: EntityIdSchema
-      },
+      inputSchema: chatScopeSchema,
       annotations: { readOnlyHint: true }
     },
     async ({ chatId, entity = "OPPORTUNITY", entityId }) => {
@@ -123,15 +127,7 @@ export function registerChatTools(server: McpServer, deps: ReadDeps): void {
     {
       title: "List chat messages",
       description: "Confirma primeiro o detalhe do chat e sua oportunidade, depois lê mensagens pela API V2, repetindo páginas estáveis até uma página vazia ou o limite informado. Preserva IDs, timestamps, direção, texto, mídia, metadados e transcrições existentes; não há associação por telefone.",
-      inputSchema: {
-        chatId: EntityIdSchema,
-        entity: ChatEntitySchema.optional(),
-        entityId: EntityIdSchema,
-        limit: z.number().int().min(1).max(100).optional(),
-        offset: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).optional(),
-        order: ChatOrderSchema.optional(),
-        maxPages: z.number().int().min(1).max(20).optional()
-      },
+      inputSchema: { ...chatScopeSchema, ...messagePageSchema },
       annotations: { readOnlyHint: true }
     },
     async ({ chatId, entity = "OPPORTUNITY", entityId, limit = 25, offset = 0, order = "desc", maxPages = 20 }) => {
@@ -144,8 +140,7 @@ export function registerChatTools(server: McpServer, deps: ReadDeps): void {
           order,
           maxPages
         });
-        const audioWithoutTranscript = collected.messages.filter(message => isAudio(message)
-          && !(typeof message.transcription_text === "string" && message.transcription_text.trim()));
+        const audioWithoutTranscript = collected.messages.filter(message => isAudio(message) && !hasTranscript(message));
         return okResult({
           ok: true,
           data: { ...collected, chat: chatResponse, scope, mediaCoverage: {
@@ -170,8 +165,8 @@ export function registerChatTools(server: McpServer, deps: ReadDeps): void {
   );
 }
 
-async function readConfirmedChat(deps: ReadDeps, requested: ChatScopeRequest, chatId: string | number) {
-  const response = await deps.v2.getChat({ id: chatId });
+export async function readConfirmedChat({ v2 }: { v2: Pick<ReadDeps["v2"], "getChat"> }, requested: ChatScopeRequest, chatId: string | number) {
+  const response = await v2.getChat({ id: chatId });
   const scope = inspectChatScopeFromResponse(response, requested, chatId);
   if (scope.verified !== "confirmed") {
     throw new Error("O detalhe do chat não confirmou simultaneamente o ID do chat, id_entity e entity.");
@@ -180,6 +175,43 @@ async function readConfirmedChat(deps: ReadDeps, requested: ChatScopeRequest, ch
 }
 
 export const CHAT_HISTORY_TOOL = "leads2b_list_chat_history";
+export const CHAT_PARTICIPANTS_TOOL = "leads2b_list_chat_participants";
+export const CHAT_AUDIO_TOOL = "leads2b_get_chat_audio";
+
+function registerChatParticipantsAndAudio(server: McpServer, deps: ReadDeps) {
+  server.registerTool(CHAT_PARTICIPANTS_TOOL, {
+    description: "Consulta os participantes de um chat após confirmar o vínculo com a oportunidade. Rota interna experimental sujeita às permissões da credencial.",
+    inputSchema: chatScopeSchema, annotations: { readOnlyHint: true }
+  }, async ({ chatId, entity = "OPPORTUNITY", entityId }) => {
+    try {
+      const { scope } = await readConfirmedChat(deps, { entity, entityId }, chatId);
+      const response = await deps.v2.rawRequest({ method: "GET", path: `/messages/chats/${chatId}/participants` });
+      return okResult({ ok: true, data: { response, scope }, summary: "Resposta de participantes recebida.",
+        source: { api: "v2", endpoint: "/messages/chats/{id}/participants", stability: "experimental" } });
+    } catch (error) { return errorResult(error); }
+  });
+
+  server.registerTool(CHAT_AUDIO_TOOL, {
+    description: "Localiza por ID uma mensagem de áudio no chat confirmado e retorna seu registro, a referência à mídia e a existência de transcrição. Consulta metadados e texto já disponíveis na API.",
+    inputSchema: { ...chatScopeSchema, messageId: z.union([EntityIdSchema, z.string().min(1).max(128)]), ...messagePageSchema },
+    annotations: { readOnlyHint: true }
+  }, async ({ chatId, entity = "OPPORTUNITY", entityId, messageId, limit = 25, offset = 0, order = "desc", maxPages = 20 }) => {
+    try {
+      const { scope } = await readConfirmedChat(deps, { entity, entityId }, chatId);
+      const collected = await collectMessagePages(deps, { chatId, limit, offset, order, maxPages });
+      const message = collected.messages.find(row => technicalRowId(row) === String(messageId));
+      const status = message ? (isAudio(message) ? (hasTranscript(message) ? "transcribed" : "audio_without_transcript") : "not_audio")
+        : "not_found_in_window";
+      return okResult({ ok: true, data: { status, scope, message: message && isAudio(message) ? message : null, coverage: collected.coverage },
+        warnings: collected.warnings, summary: "Busca de áudio no recorte de mensagens consultado.",
+        source: { api: "v2", endpoint: "/messages/chats/{id}/messages", stability: "experimental" } });
+    } catch (error) { return errorResult(error); }
+  });
+}
+
+function hasTranscript(message: Record<string, unknown>): boolean {
+  return [message.transcription_text, message.transcription].some(value => typeof value === "string" && value.trim().length > 0);
+}
 
 function registerChatHistory(server: McpServer, deps: ReadDeps) {
   server.registerTool(CHAT_HISTORY_TOOL, {

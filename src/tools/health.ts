@@ -6,9 +6,10 @@ import { Leads2bV2Client } from "../client/v2.js";
 import { okResult } from "./result.js";
 import { RAW_API_TOOL_NAME } from "./raw-api.js";
 import { DEAL_ACTION_TOOL_NAMES } from "./deal-actions.js";
+import { CHAT_ACTION_TOOL_NAMES } from "./chat-actions.js";
 import { WRITE_TOOL_NAMES } from "./write.js";
 import { operationalReadToolNames } from "./read/operational.js";
-import { CHAT_HISTORY_TOOL } from "./read/chats.js";
+import { CHAT_AUDIO_TOOL, CHAT_HISTORY_TOOL, CHAT_PARTICIPANTS_TOOL } from "./read/chats.js";
 
 type HealthDeps = {
   config: Leads2bConfig;
@@ -57,7 +58,7 @@ const V1_TOOLS = [
 ];
 
 const V2_TOOLS = [
-  "leads2b_list_chats", "leads2b_get_chat", "leads2b_list_chat_messages", CHAT_HISTORY_TOOL,
+  "leads2b_list_chats", "leads2b_get_chat", "leads2b_list_chat_messages", CHAT_HISTORY_TOOL, CHAT_PARTICIPANTS_TOOL, CHAT_AUDIO_TOOL,
   "leads2b_list_users",
   "leads2b_list_webhooks",
   "leads2b_list_cnaes",
@@ -106,10 +107,13 @@ export function registerHealthTool(server: McpServer, deps: HealthDeps): void {
         checkApi(deps.v2.hasToken(), "/users", () => deps.v2.listUsers()),
         includeSnippet ? checkSnippet(deps.config.publicWorkerUrl) : Promise.resolve(undefined)
       ]);
-      const registeredWrites = deps.config.writeMode !== "disabled" ? [...WRITE_TOOL_NAMES, ...DEAL_ACTION_TOOL_NAMES] : [];
+      const v1Writes = [...WRITE_TOOL_NAMES, ...DEAL_ACTION_TOOL_NAMES];
+      const registeredWrites = deps.config.writeMode !== "disabled" ? [...v1Writes, ...CHAT_ACTION_TOOL_NAMES] : [];
       const previewTools = deps.config.writeMode === "preview" ? registeredWrites : [];
-      const livePrerequisitesMetTools = deps.config.writeMode === "live" && v1Health.ok
-        ? registeredWrites.filter(name => v1Health.userContext || /_(customer|contact)$/.test(name)) : [];
+      const livePrerequisitesMetTools = deps.config.writeMode === "live" ? [
+        ...(v1Health.ok ? v1Writes.filter(name => v1Health.userContext || /_(customer|contact)$/.test(name)) : []),
+        ...(v2Health.ok ? CHAT_ACTION_TOOL_NAMES : [])
+      ] : [];
       const availableWrites = [...previewTools, ...livePrerequisitesMetTools];
       const registeredTools = [
         ...LOCAL_TOOLS, ...V1_TOOLS, ...V2_TOOLS, ...CROSS_API_TOOLS, ...operationalReadToolNames,
