@@ -18,6 +18,8 @@ Mudanças ainda não distribuídas ficam em `Unreleased`. Versões publicadas es
 - Consultas operacionais P1 a P3 para caixa de conversas, canais, fila comercial, atividades por etapa, cadastros, jornadas, agentes, insights, formulários, landing pages, prospecção, painéis, relatórios, anexos, orçamentos e telefonia. A Caixa de Leads e as listas de prospecção têm POSTs de consulta dedicados.
 - Histórico entre chats confere o vínculo de cada referência. A leitura de mensagens indica áudio identificado sem texto de transcrição.
 
+- Criação de atividade aceita assunto separado da descrição. Novas ferramentas tipadas reagendam ou concluem atividades existentes, com confirmação de vínculo e releitura do histórico e de Planejado.
+
 ### Corrigido
 
 - O detalhe do chat reconhece o envelope `{chat}` devolvido pela V2. A verificação de atividade concilia os campos do histórico com a linha enxuta da lista de planejadas.

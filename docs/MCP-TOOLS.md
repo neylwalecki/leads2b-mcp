@@ -296,18 +296,22 @@ Importações em massa, merges, ganho/perda de lead, pedidos, produtos e convers
 
 ## Encerramento e histórico experimentais
 
-As quatro ferramentas abaixo respeitam `disabled` (não registradas), `preview` (sem chamadas, inclusive autenticação) e `live` (uma mutação, sem retry automático). Exigem usuário v1 para execução. Seus contratos foram observados no frontend público; não foram validados em conta conectada. Consulte [proveniência e limites](API-ENDPOINTS.md#operações-experimentais).
+As ferramentas abaixo respeitam `disabled` (não registradas), `preview` (sem chamadas, inclusive autenticação) e `live` (uma mutação, sem retry automático). Exigem usuário v1 para execução. A [matriz de cobertura](COVERAGE-MATRIX.md) registra quais contratos foram confirmados em pilotos e quais foram observados no frontend.
 
 | Ferramenta | Schema | Comportamento |
 |---|---|---|
 | `leads2b_win_opportunity` | `id`, `confirm_destructive?` | Ganho com confirmação extra em live, sem clonar nem criar pós-venda. |
 | `leads2b_lose_opportunity` | `id`, `id_loss`, `loss_reason`, `confirm_destructive?` | Perda com motivo e confirmação extra, sem clonar, reativar lead ou terminar workflows. Consulte `leads2b_list_loss_reasons` para IDs. |
 | `leads2b_create_note` | `entity: LEAD\|OPPORTUNITY`, `id`, `message`, `id_pipeline_item?` | Anotação `comment` no histórico; receiver é o usuário autenticado. |
-| `leads2b_create_activity` | `entity: LEAD\|OPPORTUNITY`, `id`, `message`, `receiver`, `action`, `data`, `final_date?`, `id_pipeline_item?` | Registro `action` no histórico. Consulte `leads2b_list_actions` e equipe para os IDs. |
+| `leads2b_create_activity` | `entity: LEAD\|OPPORTUNITY`, `id`, `message`, `receiver`, `action`, `data`, `final_date?`, `action_type_label?`, `id_pipeline_item?` | Registra atividade com assunto opcional separado de `message`. Consulte `leads2b_list_actions` e equipe para os IDs. |
+| `leads2b_reschedule_activity` | `entity`, `id`, `activity_id`, `action_date`, `close_description` | Reagenda para a data e hora informadas. A releitura confere o ID, a duração e a permanência em Planejado. |
+| `leads2b_complete_activity` | `entity`, `id`, `activity_id`, `close_date`, `close_description` | Registra conclusão com data e motivo. A releitura confere o estado concluído e a ausência de pendência aberta para o ID. |
 
-Datas devem ser válidas em `YYYY-MM-DD HH:mm:ss`, no horário da conta, com término igual ou posterior ao início. Não são convertidas silenciosamente. Restrições de agenda, campos obrigatórios, tipo de atividade, pipeline e permissões continuam sujeitas à API. Registrar atividade não equivale a enviar convite ou mensagem nem a declarar uma atividade concluída; estes contratos adicionais não foram implementados.
+Datas devem ser válidas em `YYYY-MM-DD HH:mm:ss`, no horário da conta, com término igual ou posterior ao início. Não são convertidas silenciosamente. Restrições de agenda, campos obrigatórios, tipo de atividade, pipeline e permissões continuam sujeitas à API. As ferramentas de atividade operam no histórico do CRM.
 
 Antes de uma nota ou atividade em `live`, o MCP consulta o histórico filtrado para o mesmo alvo. Envelope ilegível ou possível duplicidade por texto e campos bloqueia a operação com `outcome=not_sent`; não há POST nesse caso. Após uma chamada enviada, `outcome=request_accepted` significa somente resposta aceita; `outcome=rejected` representa rejeição de negócio. `readback` consulta até 100 entradas, e atividades também consultam `/history/activities/`. `verification.status="observed"` só aparece quando o ID retornado coincide com uma ocorrência única no recorte e os campos pertinentes, alvo e texto integral conferem; em atividades, o estado pendente também deve ser observado. `verification.uniqueness="unverified"` permanece sempre, pois a paginação global da API v1 não foi validada. Formatos não reconhecidos ficam `unconfirmed` e exigem conciliação. Se houver erro da mutação, o retorno permanece erro e inclui `writeState.outcome="unknown"`, `automaticRetry=false`, alvo, corpo solicitado e releitura. Se a releitura falhar após resposta aceita, a aceitação permanece registrada com a verificação correspondente. Confira o estado antes de repetir.
+
+Para reagendar ou concluir, informe `entity` (`LEAD` ou `OPPORTUNITY`), o `id` do negócio e o `activity_id` do histórico. A pré-leitura precisa confirmar uma única atividade aberta, sem vínculo externo, com data consistente em Planejado. O reagendamento para o horário atual e a conclusão de atividade já fechada retornam `outcome=not_sent`. As ferramentas distinguem aceitação da API de `verification.status=observed` e incluem releitura quando a resposta do PUT é ambígua. O piloto cobriu FollowUp sem evento de calendário externo.
 
 ### Valores de campos personalizados
 

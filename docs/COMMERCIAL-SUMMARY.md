@@ -28,17 +28,19 @@ node .internal/p0-validation/examples/commercial-summary-preview.mjs
 Apresente ao operador uma escolha explícita:
 
 - `leads2b_create_note`: registra o resumo como comentário no histórico. O texto deve ser enviado integralmente, sem reescrita silenciosa. O usuário autenticado em v1 é o responsável pela nota.
-- `leads2b_create_activity`: registra uma ação planejada com mensagem, responsável, tipo e data. O texto também deve ser preservado integralmente. Consulte primeiro os catálogos de usuário e ação. O contrato de criação não inclui um campo de assunto comprovado; `action_type_label` foi observado em atualização e não deve ser enviado por esta ferramenta sem evidência própria.
+- `leads2b_create_activity`: registra uma ação planejada com mensagem, responsável, tipo e data. O texto também deve ser preservado integralmente. Consulte primeiro os catálogos de usuário e ação. Use `message` para a descrição e `action_type_label` para o assunto opcional.
 
 As duas operações respeitam `LEADS2B_WRITE_MODE`. Em `disabled`, as ferramentas não são registradas. Em `preview`, retornam apenas o plano, sem consulta ao usuário ou ao histórico. Em `live`, o MCP primeiro lê até 100 entradas do histórico, e também as atividades quando a operação é uma ação. Envelope ilegível ou possível duplicidade por texto e campos bloqueia o POST com `outcome=not_sent`. Se a pré-leitura for válida, uma única chamada pode ser enviada, sem retry automático. A resposta HTTP aceita não comprova persistência.
 
 Depois de uma gravação em `live`, releia até 100 entradas do histórico e, para atividade, a lista de atividades. `verification.status="observed"` só é emitido quando o ID retornado corresponde a uma ocorrência única no recorte, entidade, ID da oportunidade, texto integral e campos pertinentes conferem e a atividade aparece como pendente. Na lista enxuta de planejadas, confira o mesmo ID e data, além de ausência de fechamento. O histórico fornece alvo, texto, tipo, responsável e estado pendente. A unicidade global permanece `unverified`, pois a paginação v1 não foi validada. Envelopes desconhecidos ficam `unconfirmed`. Uma releitura ausente ou ambígua exige conciliação antes de qualquer nova chamada. Não repita automaticamente uma mutação que possa ter sido aceita.
 
-## Piloto separado
+Para uma atividade já criada, use `leads2b_reschedule_activity` ou `leads2b_complete_activity` com o ID da atividade e o do negócio. Consulte os schemas na [referência das ferramentas](MCP-TOOLS.md#encerramento-e-histórico-experimentais).
+
+## Validação de gravação
 
 Uma gravação real exige autorização anterior para uma conta de teste, uma oportunidade descartável, a operação única, o usuário, o tipo e a data. Use um marcador sintético, execute uma única nota ou uma única atividade e confira a ocorrência no GET e na UI. O piloto não deve criar convite ou evento de agenda, enviar mensagem, alterar etapa ou fechar a oportunidade.
 
-A conta de produção permanece somente leitura durante a implementação e os testes locais. A leitura da fila ou de um histórico não autoriza nem comprova criação.
+Os pilotos de 12 e 14/11/2026 confirmaram a criação tipada de atividade e nota, respectivamente. O piloto de nota também confirmou o bloqueio de duplicidade antes do POST. Consulte a [matriz de cobertura](COVERAGE-MATRIX.md#p0) para os resultados por operação.
 
 ## Cobertura da P0
 

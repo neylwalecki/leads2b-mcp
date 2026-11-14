@@ -23,7 +23,8 @@ async function setup(mode: "disabled" | "preview" | "live" = "live") {
 const note = { entity: "OPPORTUNITY", id: 123, message: fixtures.note.history_message };
 const activity = { entity: "OPPORTUNITY", id: 123, message: fixtures.activity.history_message, receiver: 7, action: 2,
   data: fixtures.activity.data, final_date: fixtures.activity.final_date };
-const call = (kind: "note" | "activity", input = kind === "note" ? note : activity) => client.callTool({ name: `leads2b_create_${kind}`, arguments: input });
+const call = (kind: "note" | "activity", input: Record<string, unknown> = kind === "note" ? note : activity) =>
+  client.callTool({ name: `leads2b_create_${kind}`, arguments: input });
 
 function mockApi(kind: "note" | "activity", options: {
   before?: unknown; after?: unknown; planned?: unknown; result?: unknown; failWrite?: boolean; failReadback?: boolean;
@@ -150,9 +151,25 @@ it("preserves ambiguous write, requested payload and observed occurrence without
   expect(repeated.structuredContent).toMatchObject({ data: { outcome: "not_sent" } });
 });
 
-it("rejects unverified subject and blank text before I/O", async () => {
+it.each(["Assunto distinto", "Corrompido"])("verifies the independent subject through the form and history (%s)", async returned => {
+  const subject = "Assunto distinto";
+  const mock = mockApi("activity", { after: [{ ...fixtures.activity, action_type_label: returned }], planned: [{
+    id: fixtures.activity.id, action_date: activity.data, close_date: null
+  }] });
+  await setup();
+  const result = await call("activity", { ...activity, action_type_label: subject });
+  expect(mock.posts()).toBe(1);
+  expect(mock.bodies[0].get("data[action_type_label]")).toBe(subject);
+  expect(mock.bodies[0].get("data[message]")).toBe(activity.message);
+  expect(result.structuredContent).toMatchObject({ data: { verification: {
+    status: returned === subject ? "observed" : "unconfirmed",
+    history: { fields: { action_type_label: returned === subject } }
+  } } });
+});
+
+it("rejects blank subject and blank text before I/O", async () => {
   globalThis.fetch = vi.fn(); await setup();
-  for (const input of [{ ...activity, action_type_label: "Subject" }, { ...activity, message: " \n " }]) {
+  for (const input of [{ ...activity, action_type_label: "  " }, { ...activity, message: " \n " }]) {
     expect((await call("activity", input)).isError).toBe(true);
   }
   expect(globalThis.fetch).not.toHaveBeenCalled();

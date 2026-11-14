@@ -22,9 +22,9 @@ O servidor concentra-se em consultas, atribuição e operações de CRM com sche
 |---|---|
 | Paginação remota de customers | A saída usa recorte local; a semântica remota precisa de validação |
 | Contatos | Há detalhe e listagem por customer; não há busca global dedicada |
-| Histórico e resumo comercial | Piloto de gravação em conta de teste. Cobertura total do histórico V1 e unicidade global ainda precisam de verificação |
+| Histórico e resumo comercial | Gravação de nota e atividade confirmada em pilotos sintéticos. Cobertura total do histórico V1 e unicidade global ainda precisam de verificação |
 | Mídia e transcrição | A leitura preserva os metadados existentes e sinaliza áudio identificado sem texto. Download e transcrição nova exigem escopo próprio |
-| Atividades e conversas | Reagendamento, conclusão e remoção de atividade, envio, reação, atribuição, exclusão e agendamento de chat aguardam evidência por transição |
+| Atividades e conversas | Assunto de atividade, reagendamento e conclusão disponíveis nas ferramentas tipadas. Remoção, outros estados de fechamento e ações de comunicação seguem pendentes |
 | Caixas, relatórios e prospecção | Confirmar paginação e filtros dos POSTs de consulta em recortes maiores, filtros de relatórios dinâmicos e permissões e consumo de leituras de prospecção |
 | Encerramento de leads | Ganho/perda estão implementados somente para oportunidades |
 | Operações em lote e merges | Não há ferramentas dedicadas |

@@ -162,7 +162,9 @@ As operações abaixo usam a API interna v1, exceto as três rotas de conversas,
 | Ganho de oportunidade | `PUT /opportunity/winOpportunity/{id}` | `cloneOpportunity=NOT_CLONE`, `createAfterSale="false"`, `afterSalePipeline/idRouter/idUser=null`; sem clonagem ou pós-venda |
 | Perda de oportunidade | `PUT /opportunity/opportunityLost` | `id_opportunity`, `id_loss`, `exclusion_reason`; `cloning_opportunity`, `finishWorkflowInstances` e `reactivate_lead` falsos |
 | Anotação | `POST /history/index/` | Formulário no envelope `data`; `option=comment`, `message`, `receiver`, entidade e ID. Receiver é o usuário autenticado |
-| Atividade | `POST /history/index/` | `option=action`, `receiver`, `action`, `data`, `final_date`, `message`, `id_pipeline_item`; sem convite ou conclusão |
+| Atividade | `POST /history/index/` | `option=action`, `receiver`, `action`, `data`, `final_date`, `message`, `action_type_label` opcional, `id_pipeline_item`; sem convite ou conclusão |
+| Reagendar atividade | `PUT /history/index/{id}` | JSON com `status=reschedule`, `action_date` e `close_description`. O piloto preservou ID, duração e pendência aberta. |
+| Concluir atividade | `PUT /history/index/{id}` | JSON com `status=done`, `done=true`, `close_date` e `close_description`. O piloto confirmou fechamento no mesmo ID. |
 | Leitura de histórico | `GET /history/index/` | Endpoint observado; `leads2b_list_history` envia `entity`, `id_entity`, `limit`, `offset` e, quando informados, `type`, `unfinished` e `pinned`, preservando a resposta integral. Paginação nativa e cobertura total não verificadas. A releitura de notas e atividades solicita até 100 entradas e não comprova persistência sozinha |
 | Atividades por entidade | `GET /history/activities/` | Endpoint interno observado; `leads2b_list_activities` restringe a consulta a uma entidade e ID e preserva a resposta integral. Paginação e cobertura total não verificadas |
 | Responsáveis ativos do funil | `GET /pipeline/responsible_users/{pipelineId}/active` | Catálogo observado para validar elegibilidade de responsável. Somente leitura; não comprova permissão para criar atividade |
@@ -177,4 +179,4 @@ As rotas v2 de conversas acima foram observadas na interface autenticada e em co
 
 A [referência OpenAPI pública](https://developers.leads2b.dev/api/openapi) consultada nesta revisão lista pedidos, itens de pedido, endereços e imagem de produto. A [documentação de webhooks](https://developers.leads2b.dev/webhooks/) descreve eventos Won/Lost; esses eventos não fornecem o contrato de mutação. Nenhuma das duas fontes substitui validação dos contratos internos acima.
 
-Permissões por endpoint, regras obrigatórias e efeitos sobre workflows dependem da conta. As quatro operações têm contratos experimentais, sem garantia de persistência. Ganho/perda de lead e conclusão de atividades não possuem ferramenta dedicada. Para investigar HTTP 400/500, registre ferramenta, parâmetros e retorno sanitizados.
+Permissões por endpoint, regras obrigatórias e efeitos sobre workflows dependem da conta. As operações têm contratos experimentais. Ganho e perda de lead não possuem ferramenta dedicada. Para investigar HTTP 400/500, registre ferramenta, parâmetros e retorno sanitizados.

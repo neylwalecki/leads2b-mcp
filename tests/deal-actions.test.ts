@@ -15,7 +15,9 @@ function setup(writeMode: "disabled" | "preview" | "live", user = true) {
 it("registers no deal actions in disabled mode", () => expect(setup("disabled").handlers.size).toBe(0));
 it("previews all actions without any request or user lookup", async () => {
   const s = setup("preview", false);
-  const inputs = [{ id: 123 }, { id: 123, id_loss: 2, loss_reason: "Example" }, { entity: "OPPORTUNITY", id: 123, message: "Example" }, { entity: "LEAD", id: 123, message: "Example", receiver: 7, action: 2, data: "2026-10-05 12:00:00" }];
+  const inputs = [{ id: 123 }, { id: 123, id_loss: 2, loss_reason: "Example" }, { entity: "OPPORTUNITY", id: 123, message: "Example" }, { entity: "LEAD", id: 123, message: "Example", receiver: 7, action: 2, data: "2026-10-05 12:00:00" },
+    { entity: "OPPORTUNITY", id: 123, activity_id: 91, action_date: "2026-10-06 12:00:00", close_description: "Reagendar" },
+    { entity: "OPPORTUNITY", id: 123, activity_id: 91, close_date: "2026-10-06 12:00:00", close_description: "Concluir" }];
   for (let i = 0; i < DEAL_ACTION_TOOL_NAMES.length; i++) expect((await s.handlers.get(DEAL_ACTION_TOOL_NAMES[i])!(inputs[i])).structuredContent.data.executed).toBe(false);
   expect(s.rawRequest).not.toHaveBeenCalled(); expect(s.createHistory).not.toHaveBeenCalled(); expect(s.getLoggedUser).not.toHaveBeenCalled();
 });
