@@ -34,6 +34,8 @@ class McpStdioTestClient {
         ...process.env,
         LEADS2B_API_V1_TOKEN: "",
         LEADS2B_API_V2_TOKEN: "",
+        LEADS2B_WRITE_MODE: "disabled",
+        LEADS2B_ENABLE_RAW_API: "false",
         ...env
       },
       stdio: ["pipe", "pipe", "pipe"]
