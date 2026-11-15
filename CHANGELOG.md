@@ -24,6 +24,7 @@ Mudanças ainda não distribuídas ficam em `Unreleased`. Versões publicadas es
 
 ### Corrigido
 
+- A verificação do MCPB confere o catálogo registrado e testa prévias de atividades e mensagens. O lockfile resolve versões corrigidas das dependências apontadas pelo `npm audit`.
 - Registro de tentativa de atividade verifica o novo comentário vinculado e a permanência da atividade original em Planejado. Uma tentativa com o mesmo vínculo, data e motivo bloqueia a repetição.
 - O detalhe do chat reconhece o envelope `{chat}` devolvido pela V2. A verificação de atividade concilia os campos do histórico com a linha enxuta da lista de planejadas.
 

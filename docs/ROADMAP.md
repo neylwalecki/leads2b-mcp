@@ -23,7 +23,7 @@ O servidor concentra-se em consultas, atribuição e operações de CRM com sche
 | Paginação remota de customers | A saída usa recorte local; a semântica remota precisa de validação |
 | Contatos | Há detalhe e listagem por customer; não há busca global dedicada |
 | Histórico e resumo comercial | Gravação de nota e atividade confirmada em pilotos sintéticos. Cobertura total do histórico V1 e unicidade global ainda precisam de verificação |
-| Mídia e transcrição | A leitura por ID encontra o áudio e indica a presença de transcrição. Download e geração de transcrição permanecem pendentes |
+| Mídia e transcrição | A leitura por ID consulta o áudio e a transcrição disponível. Geração de transcrição fica a cargo do cliente MCP. Download dedicado é uma extensão possível |
 | Atividades e conversas | Tentativa, encerramento sem objetivo e exclusão confirmados em atividades sintéticas. Operações de chat têm testes locais e aguardam canal e destinatário de teste. Leitura positiva de participantes depende de permissão |
 | Caixas, relatórios e prospecção | O Relatório de ações aceita intervalo. Filtros adicionais, paginação com amostras preenchidas e permissões de prospecção precisam de validação |
 | Encerramento de leads | Ganho/perda estão implementados somente para oportunidades |

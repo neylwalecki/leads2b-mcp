@@ -155,7 +155,7 @@ Fontes: [aplicativo público](https://app.leads2b.com/), [common-DbozlP4W.js](ht
 | `common-DbozlP4W.js` | `2c3d64c9a13f25a7a9c38e010e25b9a19c87b74a69e4d8f089a39c57dead125d` |
 | `deals-ClsvYcLi.js` | `bbfc97b11793591f12cc2d3a95285ab83a13ee31651a87f1b6b30f933f503edc` |
 
-As operações abaixo usam a API interna v1, exceto as três rotas de conversas, que usam v2. Os contratos observados são instáveis e não comprovam persistência nem permissões com tokens do MCP.
+As operações de CRM usam a API interna v1. As operações de conversa usam v2. Veja a evidência de cada operação na [matriz de cobertura](COVERAGE-MATRIX.md).
 
 | Operação | Método e endpoint interno | Contrato e limite |
 |---|---|---|
@@ -165,17 +165,24 @@ As operações abaixo usam a API interna v1, exceto as três rotas de conversas,
 | Atividade | `POST /history/index/` | `option=action`, `receiver`, `action`, `data`, `final_date`, `message`, `action_type_label` opcional, `id_pipeline_item`; sem convite ou conclusão |
 | Reagendar atividade | `PUT /history/index/{id}` | JSON com `status=reschedule`, `action_date` e `close_description`. O piloto preservou ID, duração e pendência aberta. |
 | Concluir atividade | `PUT /history/index/{id}` | JSON com `status=done`, `done=true`, `close_date` e `close_description`. O piloto confirmou fechamento no mesmo ID. |
+| Registrar tentativa | `PUT /history/index/{id}` | JSON com `status=tried`, `action_date`, `close_description` e `tried_by_user_id`. A API devolve `new_history_id` para o comentário vinculado. |
+| Encerrar sem objetivo | `PUT /history/index/{id}` | JSON com `status=unfinishedGoal`, `done=false`, `close_date` e `close_description`. |
+| Excluir atividade | `DELETE /history/index/{id}` | O campo `reason` é enviado para atividade encerrada. A releitura verifica a ausência nos recortes do histórico e de Planejado. |
 | Leitura de histórico | `GET /history/index/` | Endpoint observado; `leads2b_list_history` envia `entity`, `id_entity`, `limit`, `offset` e, quando informados, `type`, `unfinished` e `pinned`, preservando a resposta integral. Paginação nativa e cobertura total não verificadas. A releitura de notas e atividades solicita até 100 entradas e não comprova persistência sozinha |
 | Atividades por entidade | `GET /history/activities/` | Endpoint interno observado; `leads2b_list_activities` restringe a consulta a uma entidade e ID e preserva a resposta integral. Paginação e cobertura total não verificadas |
 | Responsáveis ativos do funil | `GET /pipeline/responsible_users/{pipelineId}/active` | Catálogo observado para validar elegibilidade de responsável. Somente leitura; não comprova permissão para criar atividade |
 | Lista de chats por oportunidade | `GET /messages/chats` | Endpoint interno v2 observado; exige `id_entity`, `entity=opportunity` e `order`, com `limit` e `offset` opcionais. Não agrupa por telefone |
 | Detalhe do chat | `GET /messages/chats/{chatId}` | Endpoint interno v2 observado para confirmar identidade e vínculo do chat |
 | Mensagens do chat | `GET /messages/chats/{chatId}/messages` | Endpoint interno v2 observado; usa `offset`, `limit` e `order` após validar o detalhe do chat e o `entityId`. A ferramenta coleta páginas até vazio, repetição, falha, ordem instável ou limite, remove duplicidades técnicas e preserva texto, direção, timestamps e campos de mídia/transcrição retornados. `coverage` distingue `complete` de `partial`; total global continua não comprovado |
+| Atribuir chat | `PUT /messages/chats/{chatId}` | Envelope `chat` com `id` e `id_user`; o MCP confere o responsável atual e o catálogo da caixa. |
+| Enviar ou agendar texto | `POST /messages/chats/{chatId}/messages` ou `POST /messages/chats/{chatId}/schedule` | Envelope `message` com destinatário, canal e texto. Agendamento acrescenta `scheduledAt` em ISO no nível superior. A releitura é do registro no CRM. |
+| Reagir a mensagem | `POST /messages/chats/{chatId}/messages/{messageId}/reactions` | JSON com `reaction`. A releitura verifica a reação registrada no CRM. |
+| Excluir chat | `DELETE /messages/chats/{chatId}` | O MCP limita a operação a WhatsApp Web e exige confirmação destrutiva. |
 | Campos personalizados | Detalhe de lead/oportunidade | Normalizador preserva `custom_columns`, além dos outros grupos; preenchimento depende da conta |
 
 A busca v2 de customers usa `/customer?search=...`. O frontend também passa `limit` e `offset`, mas o servidor ainda não depende dessa paginação remota: a saída é recortada localmente, com cobertura explícita.
 
-As rotas v2 de conversas acima foram observadas na interface autenticada e em consultas de leitura independentes. Elas não fazem parte da referência pública usada por este projeto e podem mudar sem aviso. O MCP não envia mensagens, não sobe mídia, não agenda conversa, não reage, não atribui participante e não exclui chat. Preserve o vínculo confirmado entre oportunidade e chat antes de interpretar mensagens.
+As rotas v2 de conversa foram observadas na interface autenticada. As leituras têm verificações independentes conforme a matriz. As mutações de conversa foram validadas com simulações locais e aguardam piloto controlado. As rotas internas podem mudar sem aviso. Preserve o vínculo confirmado entre oportunidade e chat antes de interpretar mensagens.
 
 A [referência OpenAPI pública](https://developers.leads2b.dev/api/openapi) consultada nesta revisão lista pedidos, itens de pedido, endereços e imagem de produto. A [documentação de webhooks](https://developers.leads2b.dev/webhooks/) descreve eventos Won/Lost; esses eventos não fornecem o contrato de mutação. Nenhuma das duas fontes substitui validação dos contratos internos acima.
 

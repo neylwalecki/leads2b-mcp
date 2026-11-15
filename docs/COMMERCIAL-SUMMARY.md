@@ -34,7 +34,7 @@ As duas operações respeitam `LEADS2B_WRITE_MODE`. Em `disabled`, as ferramenta
 
 Depois de uma gravação em `live`, releia até 100 entradas do histórico e, para atividade, a lista de atividades. `verification.status="observed"` só é emitido quando o ID retornado corresponde a uma ocorrência única no recorte, entidade, ID da oportunidade, texto integral e campos pertinentes conferem e a atividade aparece como pendente. Na lista enxuta de planejadas, confira o mesmo ID e data, além de ausência de fechamento. O histórico fornece alvo, texto, tipo, responsável e estado pendente. A unicidade global permanece `unverified`, pois a paginação v1 não foi validada. Envelopes desconhecidos ficam `unconfirmed`. Uma releitura ausente ou ambígua exige conciliação antes de qualquer nova chamada. Não repita automaticamente uma mutação que possa ter sido aceita.
 
-Para uma atividade já criada, use `leads2b_reschedule_activity` ou `leads2b_complete_activity` com o ID da atividade e o do negócio. Consulte os schemas na [referência das ferramentas](MCP-TOOLS.md#encerramento-e-histórico-experimentais).
+Para uma atividade já criada, informe o ID da atividade e o do negócio. Há ferramentas para reagendar, registrar uma tentativa vinculada, concluir, encerrar sem atingir o objetivo e excluir. Uma tentativa preserva o horário da atividade original em Planejado. Consulte os schemas na [referência das ferramentas](MCP-TOOLS.md#encerramento-e-histórico-experimentais).
 
 ## Validação de gravação
 
@@ -45,7 +45,7 @@ Os pilotos de 12 e 14/11/2026 confirmaram a criação tipada de atividade e nota
 ## Cobertura da P0
 
 - Chats por entidade e oportunidade, detalhe do chat e mensagens paginadas, com vínculo explícito e preservação de metadados.
-- Campos de mídia, payload e transcrição que já vierem nas mensagens são preservados no retorno, sem download ou transcrição nova.
+- Campos de mídia, payload e transcrição que já vierem nas mensagens são preservados no retorno. Se houver áudio sem texto, o agente pode transcrever com o motor escolhido pela equipe e sinalizar no resumo os trechos indisponíveis.
 - Histórico filtrável por tipo e estado de pendência, além da leitura de atividades por oportunidade.
 - Catálogos de ações e responsáveis ativos para conferência antes de uma atividade.
 - Escolha explícita entre nota e atividade, com write-mode e releitura conservadora.

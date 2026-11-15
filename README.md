@@ -11,13 +11,15 @@ Projeto independente, sem afiliação à Leads2b. Licença [MIT](LICENSE).
 | Empresas e pessoas | Listagem, busca, detalhe e CRUD de `CUSTOMER` |
 | Contatos | Listagem por customer, detalhe e CRUD |
 | Leads e oportunidades | Busca, detalhe, CRUD e alteração de funil, etapa e responsável |
-| Conversas e histórico | Chats por oportunidade, mensagens paginadas, histórico filtrável, atividades e gravações experimentais de nota/atividade |
+| Conversas | Chats por oportunidade, mensagens paginadas, áudio por mensagem e transcrições fornecidas pela Leads2b. Atribuição, envio e agendamento de texto, reação e exclusão experimental |
+| Histórico e atividades | Histórico filtrável, notas, fila comercial, criação com assunto, reagendamento, tentativa, conclusão, encerramento sem objetivo e exclusão |
 | Operação de leads | Coleta paginada, filtros, candidatos e cobertura explícita |
 | Atribuição | Conversões, tracking, UTMs, first/last touch observados e divergências |
 | Catálogos | Equipe, pipelines, etapas, origens, campos, tags e motivos de perda |
 | Agenda e integrações | Consulta de calendário, snippet e webhooks |
+| Consultas operacionais | Jornadas publicadas, segmentações, Caixa de Leads, prospecção, painéis e relatório de ações |
 
-Escritas são desativadas por padrão. Consulte a [referência de ferramentas](docs/MCP-TOOLS.md) para schemas, requisitos e limites de cada operação.
+Escritas são desativadas por padrão. A [referência de ferramentas](docs/MCP-TOOLS.md) descreve entradas e requisitos. A [matriz de cobertura](docs/COVERAGE-MATRIX.md) registra as verificações por operação.
 
 ## Instalação
 
@@ -88,7 +90,7 @@ Escritas em leads/oportunidades e no histórico exigem uma credencial v1 com con
 |---|---|
 | `disabled` | Somente leitura; ferramentas de escrita não são registradas |
 | `preview` | Retorna método, endpoint e payload, sem enviar alterações |
-| `live` | Executa alterações; exclusão e ganho/perda exigem `confirm_destructive=true` |
+| `live` | Habilita alterações de CRM e conversas com as credenciais e permissões correspondentes. Exclusão e ganho/perda exigem `confirm_destructive=true` |
 
 O cliente MCP pode solicitar aprovações próprias. Escritas não recebem retry automático. Se a API retornar erro depois do envio, confira a releitura antes de repetir: uma resposta HTTP 500 não comprova rollback.
 
@@ -139,8 +141,9 @@ Importe `leads2b-mcp/lead-ops` após instalar o pacote local. Essa entrada expor
 ## Limites
 
 - O servidor usa as APIs internas `app.leads2b.com/api/v1` e `/api/v2`. Elas diferem da API pública `api.leads2b.com/v2` e podem mudar sem aviso.
-- Ganho/perda de oportunidade, anotação e atividade são experimentais. Permissões e persistência dependem da API e das regras da conta. Registrar atividade não envia convite nem marca conclusão.
-- As rotas internas de conversas são experimentais. O fluxo conserva o vínculo entre oportunidade e chat, não reúne chats por telefone e não envia mensagens, mídia, reações ou convites.
+- Ganho/perda de oportunidade, anotações, atividades e operações de chat usam rotas experimentais. Permissões e persistência dependem da API e das regras da conta.
+- O MCP confirma o vínculo entre chat e oportunidade. Envio e agendamento de texto exigem canal WhatsApp oficial, destinatário explícito e sessão ativa. A releitura verifica o registro no CRM. A entrega ao destinatário exige verificação própria.
+- A leitura preserva as transcrições que a Leads2b disponibiliza. Quando houver só o áudio, o cliente MCP pode escolher um motor de transcrição para seu ambiente.
 - O fluxo de resumo comercial prepara uma prévia e oferece escolha explícita entre nota e atividade. Um piloto de gravação real exige autorização separada para conta, oportunidade, usuário, tipo e data, além de releitura no GET e conferência na UI.
 - A paginação da busca de customers é local: limita a saída, mas não reduz a transferência da resposta original.
 - Merges, importações em lote, ganho/perda de lead e conversões artificiais não têm ferramentas dedicadas. Consulte a [cobertura](docs/ROADMAP.md).

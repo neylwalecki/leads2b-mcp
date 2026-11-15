@@ -39,6 +39,7 @@ try {
     await writeFile(path, data);
   }
   await validateBundleManifest(manifest, pkg.version, extractDir);
+  let readCatalog;
   for (const mode of ["disabled", "preview"]) {
     const client = new Client({ name: "leads2b-package-verifier", version: pkg.version });
     const transport = new StdioClientTransport({ command: process.execPath, args: [join(extractDir, "dist/index.js")], env: {
@@ -50,9 +51,18 @@ try {
       const { tools } = await client.listTools();
       const toolNames = tools.map(tool => tool.name);
       assert(toolNames.includes("leads2b_scan_lead_ops") && toolNames.includes("leads2b_get_contact"));
+      assert(toolNames.includes("leads2b_list_chat_messages") && toolNames.includes("leads2b_get_chat_audio"));
       assert(!toolNames.includes("leads2b_api_request"));
       const writes = tools.filter(tool => tool.annotations?.readOnlyHint === false);
-      assert.equal(writes.length, mode === "preview" ? 16 : 0);
+      const writeNames = writes.map(tool => tool.name).toSorted();
+      const reads = tools.filter(tool => tool.annotations?.readOnlyHint === true).map(tool => tool.name).toSorted();
+      if (mode === "disabled") {
+        assert.deepEqual(toolNames.toSorted(), reads);
+        readCatalog = reads;
+      } else {
+        assert.deepEqual(reads, readCatalog);
+        assert.equal(tools.length, reads.length + writes.length);
+      }
       if (mode === "preview") {
         const result = await client.callTool({ name: "leads2b_create_customer", arguments: { fields: { name: "Example", type: "PERSON" } } });
         assert(!result.isError);
@@ -61,12 +71,15 @@ try {
       }
       const health = await client.callTool({ name: "leads2b_health_check", arguments: {} });
       assert.deepEqual(health.structuredContent.data.registeredTools.toSorted(), toolNames.toSorted());
+      assert.deepEqual(health.structuredContent.data.writeTools.previewTools.toSorted(), writeNames);
       if (mode === "preview") {
         for (const [name, args] of [
           ["leads2b_win_opportunity", { id: 123 }],
           ["leads2b_lose_opportunity", { id: 123, id_loss: 2, loss_reason: "Example" }],
           ["leads2b_create_note", { entity: "LEAD", id: 123, message: "Example" }],
-          ["leads2b_create_activity", { entity: "OPPORTUNITY", id: 123, message: "Example", receiver: 7, action: 2, data: "2026-10-05 12:00:00" }]
+          ["leads2b_create_activity", { entity: "OPPORTUNITY", id: 123, message: "Example", receiver: 7, action: 2, data: "2026-10-05 12:00:00" }],
+          ["leads2b_record_activity_attempt", { entity: "OPPORTUNITY", id: 123, activity_id: 7, action_date: "2026-10-05 12:00:00", close_description: "Example" }],
+          ["leads2b_send_chat_text", { chatId: 7, entityId: 123, channelId: 3, recipient: "12025550101", text: "Example" }]
         ]) {
           const result = await client.callTool({ name, arguments: args });
           assert(!result.isError);

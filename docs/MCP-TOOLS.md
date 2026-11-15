@@ -157,7 +157,7 @@ Antes de ler mensagens, a ferramenta solicita `GET /messages/chats/{chatId}` e v
 
 Esta coleta por offset não usa snapshot atômico. `complete` descreve o fim observado nessa coleta, sem garantir uma coleção imutável enquanto novas mensagens chegam. `nextOffset` permite retomar uma leitura parcial, mas unir recortes de momentos diferentes não comprova cobertura completa.
 
-`leads2b_list_chat_participants` consulta o chat confirmado com `chatId` e `entityId`. A API pode retornar HTTP 403 conforme a permissão da credencial. `leads2b_list_chat_users` consulta o catálogo de responsáveis da caixa com `situation` (`open` ou `closed`). `leads2b_get_chat_audio` aceita os mesmos parâmetros de `leads2b_list_chat_messages` e `messageId`. Retorna o registro de áudio, a cobertura da busca e um dos estados `transcribed`, `audio_without_transcript`, `not_audio` ou `not_found_in_window`. Os dados vêm da API de mensagens. A geração de transcrição permanece pendente.
+`leads2b_list_chat_participants` consulta o chat confirmado com `chatId` e `entityId`. A API pode retornar HTTP 403 conforme a permissão da credencial. `leads2b_list_chat_users` consulta o catálogo de responsáveis da caixa com `situation` (`open` ou `closed`). `leads2b_get_chat_audio` aceita os mesmos parâmetros de `leads2b_list_chat_messages` e `messageId`. Retorna o registro de áudio, a cobertura da busca e um dos estados `transcribed`, `audio_without_transcript`, `not_audio` ou `not_found_in_window`. Para áudio sem texto, o cliente MCP pode usar um motor de transcrição escolhido pela equipe.
 
 ### Alterações experimentais de chat
 

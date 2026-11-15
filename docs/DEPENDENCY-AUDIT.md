@@ -16,9 +16,9 @@ O empacotador usa `fflate` para criar o arquivo ZIP e AJV com `ajv-formats` para
 
 ### Atualização de segurança do SDK
 
-O lockfile usa `@modelcontextprotocol/sdk` 1.31.0, que inclui a correção do [GHSA-6qxp-vccf-f47h](https://github.com/advisories/GHSA-6qxp-vccf-f47h). O aviso afeta versões de 1.12.0 até 1.30.1.
+O lockfile usa `@modelcontextprotocol/sdk` 1.32.2 e `zod` 4.6.7. As versões resolvidas incluem as correções encontradas pela auditoria de 14/11/2026. A atualização mantém as faixas de versões declaradas em `package.json`.
 
-O aviso afeta o cliente OAuth HTTP do SDK. A referência oficial exclui servidores MCP e clientes STDIO; este projeto usa essas interfaces, sem cliente OAuth HTTP. Mantenha o SDK atualizado e execute o audit completo; não suprima a verificação.
+Este projeto usa o transporte STDIO. A CI verifica toda a árvore de dependências, inclusive pacotes de desenvolvimento.
 
 ## Gerar e verificar um pacote
 
