@@ -61,7 +61,7 @@ class McpStdioTestClient {
       capabilities: {},
       clientInfo: {
         name: "leads2b-mcp-stdio-test",
-        version: "0.4.2"
+        version: "0.5.0"
       }
     });
 
@@ -162,7 +162,7 @@ describe("MCP stdio server", () => {
     expect(initialized.error).toBeUndefined();
     expect(initialized.result?.serverInfo).toMatchObject({
       name: "leads2b-mcp",
-      version: "0.4.2"
+      version: "0.5.0"
     });
 
     const listed = await client.request("tools/list");
