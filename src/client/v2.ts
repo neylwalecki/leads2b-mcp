@@ -13,6 +13,12 @@ export type Leads2bRawRequestInput = {
   body?: unknown;
 };
 
+export const CHAT_USERS_ENDPOINT = "/messages/chats/users";
+
+export function chatUsersRequest(situation: "open" | "closed") {
+  return { path: CHAT_USERS_ENDPOINT, query: { situation, order: "desc" } };
+}
+
 export class Leads2bV2Client {
   constructor(private readonly http: Leads2bHttpClient) {}
 

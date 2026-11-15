@@ -4,6 +4,10 @@ Mudanças ainda não distribuídas ficam em `Unreleased`. Versões publicadas es
 
 ## [Unreleased]
 
+### Corrigido
+
+- O health check separa o diretório V2 da consulta de responsáveis da caixa e preserva os erros originais de cada leitura. Os pré-requisitos de ferramentas de conversa usam o teste da caixa.
+
 ## [0.5.0] - 2026-11-15
 
 ### Adicionado

@@ -102,7 +102,7 @@ e o modo de escrita, sem exibir tokens. Distinga ferramentas registradas de
 permissões verificadas.
 ```
 
-O health check testa endpoints específicos. Um 403 em `/users` não comprova falha de toda a API v2. Em seguida, consulte um registro conhecido usando `leads2b_search_customers` ou `leads2b_find_records`. A busca v2 retorna até 25 registros por padrão; `returnAll=true` preserva a resposta integral. Veja outros [exemplos de uso](examples/usage-prompts.md).
+O health check testa endpoints específicos. A API v2 tem resultados separados para o diretório de usuários (`apis.v2`) e para os responsáveis da caixa de conversas (`apis.v2Chat`). Em seguida, consulte um registro conhecido usando `leads2b_search_customers` ou `leads2b_find_records`. A busca v2 retorna até 25 registros por padrão. `returnAll=true` preserva a resposta integral. Veja outros [exemplos de uso](examples/usage-prompts.md).
 
 ## Desenvolvimento
 

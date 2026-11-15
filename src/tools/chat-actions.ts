@@ -1,7 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { Leads2bHttpError, type Leads2bHttpMethod } from "../client/http.js";
-import type { Leads2bV2Client } from "../client/v2.js";
+import { chatUsersRequest, type Leads2bV2Client } from "../client/v2.js";
 import type { Leads2bWriteMode } from "../config.js";
 import { EntityIdSchema } from "../crud/schemas.js";
 import { evaluateWriteOperation } from "../safety/write-gates.js";
@@ -56,7 +56,7 @@ export function registerChatActionTools(server: McpServer, deps: Deps): void {
     }
     if (sameId(chat.id_user, assigneeId)) throw new Error("O responsável indicado já está atribuído à conversa.");
     const { users } = z.object({ users: z.array(record) }).parse(await deps.v2.rawRequest({
-      method: "GET", path: "/messages/chats/users", query: { situation: "open", order: "desc" }
+      method: "GET", ...chatUsersRequest("open")
     }));
     if (users.filter(user => sameId(user.id_user, assigneeId)).length !== 1) throw new Error("O novo responsável não foi confirmado no catálogo da caixa.");
     return {

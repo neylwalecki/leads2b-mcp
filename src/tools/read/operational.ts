@@ -2,6 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { Leads2bHttpError } from "../../client/http.js";
 import type { Leads2bRawRequestInput } from "../../client/v1.js";
+import { CHAT_USERS_ENDPOINT, chatUsersRequest } from "../../client/v2.js";
 import { EntityIdSchema } from "../../crud/schemas.js";
 import { timestamp } from "../deal-action-support.js";
 import { errorResult, okResult } from "../result.js";
@@ -124,10 +125,8 @@ const p1: ReadTool[] = [
   fixed("leads2b_get_chat_channel_activation_status", "v2", "/messages/channels/activations/status",
     "Consulta o estado de ativação dos canais, com retorno restrito a campos de status.", { select: activationStatus }),
   fixed("leads2b_get_chat_inbox_counts", "v2", "/messages/chats/count", "Consulta os contadores da caixa de conversas no escopo da credencial."),
-  read("leads2b_list_chat_users", "v2", "/messages/chats/users", "Consulta os usuários da caixa de conversas para a situação informada.",
-    { situation: z.enum(["open", "closed"]).default("open") }, ({ situation }) => ({
-      path: "/messages/chats/users", query: { situation, order: "desc" }
-    })),
+  read("leads2b_list_chat_users", "v2", CHAT_USERS_ENDPOINT, "Consulta os usuários da caixa de conversas para a situação informada.",
+    { situation: z.enum(["open", "closed"]).default("open") }, ({ situation }) => chatUsersRequest(situation)),
   read("leads2b_list_inbox_chats", "v2", "/messages/chats", "Consulta um recorte da caixa de conversas abertas ou encerradas.",
     { situation: z.enum(["open", "closed"]).default("open"), limit: pageSize, offset }, ({ situation, limit, offset }) => ({
       path: "/messages/chats", query: { situation, order: "desc", limit, offset }

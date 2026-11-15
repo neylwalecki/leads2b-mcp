@@ -1,9 +1,10 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { Leads2bConfig, getJwtExpiration } from "../config.js";
+import { Leads2bHttpError } from "../client/http.js";
 import { Leads2bV1Client } from "../client/v1.js";
-import { Leads2bV2Client } from "../client/v2.js";
-import { okResult } from "./result.js";
+import { CHAT_USERS_ENDPOINT, chatUsersRequest, type Leads2bV2Client } from "../client/v2.js";
+import { okResult, toToolError, type ToolErrorPayload } from "./result.js";
 import { RAW_API_TOOL_NAME } from "./raw-api.js";
 import { DEAL_ACTION_TOOL_NAMES } from "./deal-actions.js";
 import { CHAT_ACTION_TOOL_NAMES } from "./chat-actions.js";
@@ -27,6 +28,7 @@ type ApiHealth = {
   status?: number;
   userContext?: boolean;
   message?: string;
+  error?: ToolErrorPayload["error"];
 };
 
 const V1_TOOLS = [
@@ -102,9 +104,11 @@ export function registerHealthTool(server: McpServer, deps: HealthDeps): void {
       }
     },
     async ({ includeSnippet = false }) => {
-      const [v1Health, v2Health, snippetHealth] = await Promise.all([
+      const hasV2Token = deps.v2.hasToken();
+      const [v1Health, v2Health, v2ChatHealth, snippetHealth] = await Promise.all([
         checkApi(deps.v1.hasToken(), "/user/logged/", () => deps.v1.getLoggedUser(), true),
-        checkApi(deps.v2.hasToken(), "/users", () => deps.v2.listUsers()),
+        checkApi(hasV2Token, "/users", () => deps.v2.listUsers()),
+        checkApi(hasV2Token, CHAT_USERS_ENDPOINT, () => deps.v2.rawRequest({ method: "GET", ...chatUsersRequest("open") })),
         includeSnippet ? checkSnippet(deps.config.publicWorkerUrl) : Promise.resolve(undefined)
       ]);
       const v1Writes = [...WRITE_TOOL_NAMES, ...DEAL_ACTION_TOOL_NAMES];
@@ -112,7 +116,7 @@ export function registerHealthTool(server: McpServer, deps: HealthDeps): void {
       const previewTools = deps.config.writeMode === "preview" ? registeredWrites : [];
       const livePrerequisitesMetTools = deps.config.writeMode === "live" ? [
         ...(v1Health.ok ? v1Writes.filter(name => v1Health.userContext || /_(customer|contact)$/.test(name)) : []),
-        ...(v2Health.ok ? CHAT_ACTION_TOOL_NAMES : [])
+        ...(v2ChatHealth.ok ? CHAT_ACTION_TOOL_NAMES : [])
       ] : [];
       const availableWrites = [...previewTools, ...livePrerequisitesMetTools];
       const registeredTools = [
@@ -122,6 +126,7 @@ export function registerHealthTool(server: McpServer, deps: HealthDeps): void {
       const verifiedCapabilities = [
         ...(v1Health.ok ? [{ api: "v1", method: "GET", endpoint: "/user/logged/" }] : []),
         ...(v2Health.ok ? [{ api: "v2", method: "GET", endpoint: "/users" }] : []),
+        ...(v2ChatHealth.ok ? [{ api: "v2", method: "GET", endpoint: CHAT_USERS_ENDPOINT }] : []),
         ...(snippetHealth?.ok ? [{ api: "snippet", method: "GET", endpoint: "/latest" }] : [])
       ];
       const warnings: string[] = [];
@@ -135,7 +140,8 @@ export function registerHealthTool(server: McpServer, deps: HealthDeps): void {
         warnings.push("LEADS2B_API_V2_TOKEN não configurado; leituras v2 não podem executar, mas continuam registradas.");
       }
 
-      if (!v2Health.ok && v2Health.configured) warnings.push("Falha em GET /users; acesso a /customer, /deals e demais endpoints não foi testado por este health check.");
+      if (!v2Health.ok && v2Health.configured) warnings.push("Falha em GET /users. Consulte o resultado separado da caixa de conversas em apis.v2Chat.");
+      if (!v2ChatHealth.ok && v2ChatHealth.configured) warnings.push("Falha na leitura dos responsáveis da caixa de conversas. Consulte apis.v2Chat.");
 
       return okResult({
         ok: true,
@@ -149,6 +155,7 @@ export function registerHealthTool(server: McpServer, deps: HealthDeps): void {
           apis: {
             v1: v1Health,
             v2: v2Health,
+            v2Chat: v2ChatHealth,
             snippet: snippetHealth
           },
           baseUrls: {
@@ -164,7 +171,7 @@ export function registerHealthTool(server: McpServer, deps: HealthDeps): void {
             previewTools,
             livePrerequisitesMetTools,
             verifiedExecutionTools: [],
-            executionBasis: "Pré-requisitos locais e contexto de usuário; permissões e regras de cada operação não verificadas. Exclusões e ganho/perda exigem confirmação."
+            executionBasis: "Pré-requisitos de leitura e contexto de usuário. Conversas usam o teste da caixa. Permissões de escrita e regras de cada operação exigem verificação própria. Exclusões e ganho/perda exigem confirmação."
           },
           rawApi: {
             enabled: deps.config.rawApiEnabled,
@@ -176,7 +183,7 @@ export function registerHealthTool(server: McpServer, deps: HealthDeps): void {
           availableTools: registeredTools
         },
         warnings,
-        summary: `Leads2b MCP health: GET v1 /user/logged/=${statusLabel(v1Health)}, GET v2 /users=${statusLabel(v2Health)}. Demais endpoints v1/v2 não testados.`,
+        summary: `Leads2b MCP health: GET v1 /user/logged/=${statusLabel(v1Health)}, GET v2 /users=${statusLabel(v2Health)}, GET v2 ${CHAT_USERS_ENDPOINT}=${statusLabel(v2ChatHealth)}.`,
         source: {
           api: "local",
           stability: "confirmed"
@@ -217,7 +224,8 @@ async function checkApi(configured: boolean, endpoint: string, request: () => Pr
       responded: Boolean(status),
       ok: false,
       status,
-      message: error instanceof Error ? error.message : "Falha ao validar API."
+      message: error instanceof Error ? error.message : "Falha ao validar API.",
+      ...(error instanceof Leads2bHttpError ? { error: toToolError(error).error } : {})
     };
   }
 }

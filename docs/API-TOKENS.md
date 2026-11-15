@@ -36,7 +36,7 @@ O MCP não copia nem troca os tokens entre os dois campos automaticamente. Mesmo
 
 1. Salve as configurações com `write_mode=disabled`.
 2. No cliente MCP, peça: “Execute `leads2b_health_check` e informe autenticação, contexto de usuário e restrições, sem exibir tokens”.
-3. Confira os endpoints testados em `apis.v1` e `apis.v2`. Um erro em `/users` não comprova falha em todos os endpoints v2. Para escritas de negócios e histórico, confira também `apis.v1.userContext`.
+3. Confira os endpoints testados em `apis.v1`, `apis.v2` (diretório de usuários) e `apis.v2Chat` (responsáveis da caixa de conversas). Cada resultado tem escopo próprio. Para escritas de negócios e histórico, confira também `apis.v1.userContext`.
 4. Faça uma consulta conhecida da conta. Autenticação válida não garante permissão em todos os endpoints.
 5. Use `preview` para conferir uma operação de escrita sem alterar registros. Ative `live` somente quando quiser executar alterações reais.
 

@@ -56,12 +56,12 @@ Não há `data` substituto ou leitura adicional automática para diagnosticar a 
 |---|---|
 | `leads2b_health_check` | Mostra catálogo registrado, resultado dos endpoints testados e pré-requisitos de escrita. |
 
-O health testa somente `GET v1 /user/logged/` e `GET v2 /users` (mais `/latest` quando `includeSnippet=true`). `apis.*.endpoint`, `method` e `scope` delimitam a observação. `ok=false` em `/users` não comprova indisponibilidade de `/customer` ou `/deals`, nem exigência de administrador.
+O health testa `GET v1 /user/logged/` em `apis.v1`, o diretório `GET v2 /users` em `apis.v2` e os responsáveis da caixa aberta em `apis.v2Chat` por `GET v2 /messages/chats/users?situation=open&order=desc`. `includeSnippet=true` acrescenta `GET /latest`. Os campos `endpoint`, `method` e `scope` delimitam cada teste. Em erro da API, `error.details` preserva o retorno original do endpoint, inclusive o motivo e o escopo de permissão quando presentes.
 
 - Catálogo: `registeredTools` e seu alias de compatibilidade `availableTools`: ferramentas registradas, inclusive leituras sem token; não são permissões verificadas.
 - Capacidade verificada: `verifiedCapabilities`: somente GETs bem-sucedidos nesta chamada; não armazena validações de consultas anteriores.
 - Preview: `writeTools.previewTools`: todas as escritas em preview, mesmo sem tokens/usuário.
-- Pré-requisitos live: `writeTools.livePrerequisitesMetTools`: escritas em live com pré-requisitos conhecidos; permissão e regras de negócio ainda não verificadas.
+- Pré-requisitos live: `writeTools.livePrerequisitesMetTools` usa o resultado de `apis.v2Chat` para as operações de conversa. A leitura bem-sucedida da caixa verifica esse pré-requisito. Permissão e regras de escrita ainda exigem verificação por operação e alvo.
 - Execução verificada: `writeTools.verifiedExecutionTools`: vazio; health não faz mutação. `writeTools.availableTools` é o alias dos previews ou pré-requisitos live, conforme o modo.
 
 
