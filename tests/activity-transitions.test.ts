@@ -78,14 +78,49 @@ const reschedule = (arguments_: Record<string, unknown> = { ...target, action_da
 const complete = () => client.callTool({ name: "leads2b_complete_activity", arguments: { ...target, close_date } });
 
 it("records the follow-up date in a failed contact attempt using the authenticated user", async () => {
-  const after = { ...rescheduled, status: "tried", tried_by_user_id: "7" };
+  const before = { ...original, parentComments: [] };
+  const after = { ...before, parentComments: [{
+    id: "9103", entity: "OPPORTUNITY", id_entity: "123", history_type: "comment", id_parent: "9102",
+    action_date_sql: action_date, history_message: target.close_description, status: "tried"
+  }] };
   const { entity, id, activity_id, close_description } = target;
-  const { writes } = mockApi({ after: [after], afterPlanned: [planned(after)] });
+  const { writes } = mockApi({ before: [before], after: [after], afterPlanned: [planned(before)], result: { new_history_id: 9103 } });
   await setup();
   const call = () => client.callTool({ name: "leads2b_record_activity_attempt", arguments: { entity, id, activity_id, close_description, action_date } });
-  expect((await call()).structuredContent).toMatchObject({ data: { verification: { status: "observed" } } });
+  expect((await call()).structuredContent).toMatchObject({ data: { verification: {
+    status: "observed", attempt: { id: "9103", responseMatches: true, requestedBy: 7 }, planned: { parentPreserved: true }
+  } } });
   expect((await call()).structuredContent).toMatchObject({ data: { outcome: "not_sent" } });
   expect(writes).toEqual([{ status: "tried", action_date, close_description, tried_by_user_id: 7 }]);
+});
+
+it("keeps attempt unconfirmed when the comment belongs to a different activity or the parent's date changes", async () => {
+  const before = { ...original, parentComments: [] };
+  const wrongParent = { ...before, parentComments: [{
+    id: "9103", entity: "OPPORTUNITY", id_entity: "123", history_type: "comment", id_parent: "9109",
+    action_date_sql: action_date, history_message: target.close_description, status: "tried"
+  }] };
+  const { writes } = mockApi({ before: [before], after: [wrongParent], afterPlanned: [planned(rescheduled)] });
+  await setup();
+  const result = await client.callTool({ name: "leads2b_record_activity_attempt", arguments: { ...target, action_date } });
+  expect(result.structuredContent).toMatchObject({ data: { verification: {
+    status: "unconfirmed", attempt: { id: null, matchingComments: 0 }, planned: { parentPreserved: false }
+  } } });
+  expect(writes).toHaveLength(1);
+});
+
+it("keeps attempt unconfirmed when the API returns a different comment ID", async () => {
+  const before = { ...original, parentComments: [] };
+  const after = { ...before, parentComments: [{
+    id: "9103", entity: "OPPORTUNITY", id_entity: "123", history_type: "comment", id_parent: "9102",
+    action_date_sql: action_date, history_message: target.close_description, status: "tried"
+  }] };
+  mockApi({ before: [before], after: [after], afterPlanned: [planned(before)], result: { new_history_id: 9104 } });
+  await setup();
+  const result = await client.callTool({ name: "leads2b_record_activity_attempt", arguments: { ...target, action_date } });
+  expect(result.structuredContent).toMatchObject({ data: { verification: {
+    status: "unconfirmed", attempt: { id: "9103", responseMatches: false }, planned: { parentPreserved: true }
+  } } });
 });
 
 it("closes without reaching the objective and requires the explicitly false completion flag on readback", async () => {

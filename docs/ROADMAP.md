@@ -24,7 +24,7 @@ O servidor concentra-se em consultas, atribuição e operações de CRM com sche
 | Contatos | Há detalhe e listagem por customer; não há busca global dedicada |
 | Histórico e resumo comercial | Gravação de nota e atividade confirmada em pilotos sintéticos. Cobertura total do histórico V1 e unicidade global ainda precisam de verificação |
 | Mídia e transcrição | A leitura por ID encontra o áudio e indica a presença de transcrição. Download e geração de transcrição permanecem pendentes |
-| Atividades e conversas | Tentativa, encerramento sem objetivo, exclusão e operações de chat têm ferramentas experimentais testadas localmente. Falta o piloto em ambiente controlado e a leitura positiva de participantes |
+| Atividades e conversas | Tentativa, encerramento sem objetivo e exclusão confirmados em atividades sintéticas. Operações de chat têm testes locais e aguardam canal e destinatário de teste. Leitura positiva de participantes depende de permissão |
 | Caixas, relatórios e prospecção | O Relatório de ações aceita intervalo. Filtros adicionais, paginação com amostras preenchidas e permissões de prospecção precisam de validação |
 | Encerramento de leads | Ganho/perda estão implementados somente para oportunidades |
 | Operações em lote e merges | Não há ferramentas dedicadas |

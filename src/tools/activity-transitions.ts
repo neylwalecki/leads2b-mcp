@@ -74,7 +74,49 @@ function duration(row: Row): number | null | undefined {
   return Date.parse(String(end).replace(" ", "T") + "Z") - Date.parse(String(start).replace(" ", "T") + "Z");
 }
 
-function verifyTransition(state: HistoryState, target: Target, change: Change, before: Row, userId: string | number) {
+function attemptComments(row: Row): Row[] | undefined {
+  const comments = row.parentComments;
+  if (!Array.isArray(comments) || !comments.every(comment => comment && typeof comment === "object" && !Array.isArray(comment))) return undefined;
+  return comments as Row[];
+}
+
+function matchesAttempt(comment: Row, target: Target, change: Extract<Transition, { status: "tried" }>) {
+  return comment.history_type === "comment" && comment.status === "tried"
+    && typeof comment.entity === "string" && comment.entity.toUpperCase() === target.entity
+    && sameId(comment.id_entity, target.id) && sameId(comment.id_parent, target.activity_id)
+    && comment.history_message === change.close_description && activityDate(comment) === change.action_date;
+}
+
+function verifyAttempt(state: HistoryState, target: Target, change: Extract<Transition, { status: "tried" }>, before: Row,
+  userId: string | number, response: unknown) {
+  const rows = activityRows(state, target);
+  const current = rows.history?.length === 1 ? rows.history[0] : undefined;
+  const priorComments = attemptComments(before);
+  const comments = current && attemptComments(current);
+  const matches = comments?.filter(comment => matchesAttempt(comment, target, change));
+  const comment = matches?.length === 1 ? matches[0] : undefined;
+  const id = EntityIdSchema.safeParse(comment?.id);
+  const uniqueNewComment = id.success && priorComments !== undefined
+    && !sameId(id.data, target.activity_id) && !priorComments.some(row => sameId(row.id, id.data))
+    && comments?.filter(row => sameId(row.id, id.data)).length === 1;
+  const returnedId = response && typeof response === "object" && "new_history_id" in response ? response.new_history_id : undefined;
+  const responseMatches = returnedId === undefined ? null : id.success && sameId(returnedId, id.data);
+  const parentPreserved = matchesTarget(current, target) && preservedFields.every(field => isSameField(field, before, current))
+    && current.status === before.status && current.done === before.done && current.close_date === before.close_date
+    && current.close_description === before.close_description
+    && activityDate(current) === activityDate(before) && current.final_date === before.final_date;
+  const planned = rows.planned?.length === 1 ? rows.planned[0] : undefined;
+  const plannedPreserved = planned?.close_date === null && activityDate(planned) === activityDate(before);
+  return {
+    status: uniqueNewComment && responseMatches !== false && parentPreserved && plannedPreserved ? "observed" : "unconfirmed",
+    attempt: { id: uniqueNewComment ? String(id.data) : null, matchingComments: matches?.length ?? null, responseMatches, requestedBy: userId },
+    history: { occurrences: rows.history?.length ?? null, parentPreserved },
+    planned: { occurrences: rows.planned?.length ?? null, parentPreserved: plannedPreserved },
+    coverage: state.coverage, automaticRetry: false
+  };
+}
+
+function verifyTransition(state: HistoryState, target: Target, change: Change, before: Row, userId: string | number, response?: unknown) {
   const rows = activityRows(state, target);
   if ("reason" in change) {
     return {
@@ -83,6 +125,7 @@ function verifyTransition(state: HistoryState, target: Target, change: Change, b
       coverage: state.coverage, automaticRetry: false
     };
   }
+  if (change.status === "tried") return verifyAttempt(state, target, change, before, userId, response);
   const row = rows.history?.length === 1 ? rows.history[0] : undefined;
   const closes = "close_date" in change;
   const fields = matchesTarget(row, target) ? {
@@ -91,10 +134,9 @@ function verifyTransition(state: HistoryState, target: Target, change: Change, b
     status: row.status === change.status,
     dates: closes
       ? row.close_date === change.close_date && activityDate(row) === activityDate(before) && row.final_date === before.final_date
-      : activityDate(row) === change.action_date && (change.status === "tried" || duration(row) === duration(before)),
+      : activityDate(row) === change.action_date && duration(row) === duration(before),
     state: change.status === "unfinishedGoal" ? isNotDone(row)
-      : change.status === "done" ? isDone(row) : row.close_date === null && !isDone(row),
-    actor: change.status !== "tried" || sameId(row.tried_by_user_id, userId)
+      : change.status === "done" ? isDone(row) : row.close_date === null && !isDone(row)
   } : undefined;
   const planned = rows.planned;
   const plannedMatches = planned !== undefined && (closes
@@ -126,7 +168,7 @@ export function registerActivityTransitionTools(server: McpServer, deps: Deps): 
     status: "done", done: true, close_date, close_description: target.close_description
   }));
   server.registerTool(ATTEMPT, {
-    description: `Registra uma tentativa de contato com motivo e data do próximo acompanhamento. ${context}`,
+    description: `Registra motivo e data informada da tentativa de contato em um comentário vinculado à atividade. Para mover a atividade em Planejado, use leads2b_reschedule_activity. ${context}`,
     inputSchema: rescheduleSchema, annotations
   }, ({ action_date, ...target }) => run(ATTEMPT, target, {
     status: "tried", action_date, close_description: target.close_description
@@ -186,9 +228,12 @@ export function registerActivityTransitionTools(server: McpServer, deps: Deps): 
       if ("status" in change && change.status === "reschedule" && activityDate(row) === change.action_date) {
         return stop("A atividade já está na data e hora solicitadas.", before);
       }
-      if ("status" in change && change.status === "tried" && row.status === "tried"
-        && activityDate(row) === change.action_date && row.close_description === change.close_description) {
-        return stop("A tentativa com a mesma data e motivo já consta no histórico.", before);
+      if ("status" in change && change.status === "tried") {
+        const comments = attemptComments(row);
+        if (!comments) return stop("A releitura não confirmou a lista de comentários vinculados à atividade.", before);
+        if (comments.some(comment => matchesAttempt(comment, target, change))) {
+          return stop("A tentativa com a mesma data e motivo já consta no histórico.", before);
+        }
       }
 
       const body = "reason" in change ? (change.reason === undefined ? undefined : { reason: change.reason })
@@ -206,7 +251,7 @@ export function registerActivityTransitionTools(server: McpServer, deps: Deps): 
 
       const rejected = businessFailure(result);
       const readback = await read();
-      const verification = verifyTransition(readback, target, change, row, userId);
+      const verification = verifyTransition(readback, target, change, row, userId, result);
       const outcome = rejected ? "rejected" : "request_accepted";
       const summary = rejected ? "A API rejeitou a transição." : verification.status === "observed"
         ? "Transição confirmada no histórico e em Planejado." : verification.status === "absent_in_readback"
